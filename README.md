@@ -2,6 +2,12 @@
 
 Git Legacy is a set of tools to port Git and its most commonly used plugins to older releases of Windows.
 
-On top of that, it also strives to continue support for i686 Windows hosts.
+## Platform support
 
-**This is NOT a fork of Git for Windows, the build environment is completely different!**
+| Version | Status | Notes |
+| ------- | ------ | ----- |
+| Windows 8 | ⏳ Early work in progress |
+| Windows 7 | ⏳ Early work in progress |
+| Windows Vista | 📋 Planned, but not implemented yet |
+| Windows XP | 📋 Planned, but not implemented yet | Git Legacy may require an update to the root certificate stores.
+| Windows 2000 and earlier | ❌ Unplanned |
