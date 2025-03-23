@@ -1,0 +1,19 @@
+{
+	"FixedFileInfo":
+	{
+		"FileVersion": {
+			"Major": 3,
+			"Minor": 6,
+			"Patch": 0,
+			"Build": 0
+		}
+	},
+	"StringFileInfo":
+	{
+		"FileDescription": "Git LFS",
+		"LegalCopyright": "GitHub, Inc. and Git LFS contributors",
+		"ProductName": "Git Large File Storage (LFS)",
+		"ProductVersion": "3.6.0"
+	},
+	"IconPath": "script/windows-installer/git-lfs-logo.ico"
+}

@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+set -e
+
+# Strip out CI environment variables which cause tests to fail.
+unset $(env | grep -E '^GIT(HUB)?_' | grep -v '^GIT_DEFAULT_HASH=' | sed -e 's/=.*$//')
+
+UNAME=$(uname -s)
+X=""
+if [[ $UNAME == MINGW* || $UNAME == MSYS* || $UNAME == CYGWIN* ]]; then
+  X=".exe"
+  WINDOWS=1
+fi
+
+# Build git-lfs-transfer from scutiger.
+cargo install --root t/scutiger scutiger-lfs
+
+# Set GOPATH if it isn't already set.
+eval "$(go env | grep GOPATH)"
+go install golang.org/x/tools/cmd/goimports@latest
+
+GOIMPORTS="$GOPATH/bin/goimports"
+
+make GOIMPORTS="$GOIMPORTS" && make GOIMPORTS="$GOIMPORTS" test
+
+# re-run test to ensure GIT_TRACE output doesn't leak into the git package
+GIT_TRACE=1 make GOIMPORTS="$GOIMPORTS" PKGS=git test
+
+pushd t >/dev/null
+  PROVE="prove"
+  PROVE_EXTRA_ARGS="-j9"
+  VERBOSE_LOGS=1 make X="$X" clean
+  VERBOSE_LOGS=1 make X="$X" PROVE="$PROVE" PROVE_EXTRA_ARGS="$PROVE_EXTRA_ARGS"
+popd >/dev/null
+
+echo "Looking for trailing whitespace..."
+if git grep -lE '[[:space:]]+$' | \
+  grep -vE '(^vendor/|\.git/(objects/|index)|\.(bat|ico|bmp)$)'
+then
+  exit 1
+fi
+
+echo "Formatting files..."
+make GOIMPORTS="$GOIMPORTS" fmt
+
+echo "Looking for files that are not formatted correctly..."
+git status -s
+[ -z "$(git status --porcelain)" ]
