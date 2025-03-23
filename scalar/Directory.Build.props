@@ -1,0 +1,75 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      Set helpful property for detecting the current OS platform.
+      We can't use the build-in $(OS) because it returns 'Unix' on macOS when run under Mono.
+    -->
+    <OSPlatform Condition="$([MSBuild]::IsOsPlatform('windows'))">windows</OSPlatform>
+    <OSPlatform Condition="$([MSBuild]::IsOsPlatform('osx'))">osx</OSPlatform>
+    <OSPlatform Condition="$([MSBuild]::IsOsPlatform('linux'))">linux</OSPlatform>
+    <IsPosix>true</IsPosix>
+    <IsPosix Condition="'$(OSPlatform)'=='windows'">false</IsPosix>
+
+    <!-- Default configuration is debug -->
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+
+    <!-- Define the root of the repository as a property -->
+    <RepoPath>$(MSBuildThisFileDirectory)</RepoPath>
+    <RepoSrcPath>$(RepoPath)</RepoSrcPath>
+    <RepoOutPath>$(RepoPath)..\out\</RepoOutPath>
+    <ScalarBuildTasks>$(RepoSrcPath)Scalar.MSBuild\</ScalarBuildTasks>
+
+    <!-- Redirect the intermediate and binary output directories -->
+    <ProjectOutPath>$(RepoOutPath)$(MSBuildProjectName)\</ProjectOutPath>
+    <BaseOutputPath>$(ProjectOutPath)bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(ProjectOutPath)obj\</BaseIntermediateOutputPath>
+
+    <!-- Common build properties -->
+    <RuntimeIdentifiers>win10-x64;osx-x64;linux-x64</RuntimeIdentifiers>
+    <Deterministic>true</Deterministic>
+    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
+    <CodeAnalysisRuleSet>$(RepoPath)Scalar.ruleset</CodeAnalysisRuleSet>
+
+    <!-- Common assembly information -->
+    <Product>Scalar</Product>
+    <Copyright>Microsoft Corporation (c)</Copyright>
+
+    <!-- Version information -->
+    <ScalarVersion>0.2.173.2</ScalarVersion>
+
+    <!--
+       Update the GitPackageVersion for the version that is shipped and tested with Scalar.
+       The MinimumGitVersion is intentionally lower to allow side-by-side installs of
+       VFS for Git (which is less flexible). Only update that version if we rely upon a
+       new command-line interface in Git or if there is a truly broken interaction.
+    -->
+    <GitPackageVersion>2.20211031.5-pr</GitPackageVersion>
+    <MinimumGitVersion>v2.25.0.vfs.1.1</MinimumGitVersion>
+
+    <WatchmanPackageUrl>https://github.com/facebook/watchman/releases/download/v2020.08.03.00/watchman-v2020.08.03.00-windows.zip</WatchmanPackageUrl>
+    <GcmCoreOSXPackageUrl>https://github.com/microsoft/Git-Credential-Manager-Core/releases/download/v2.0.79-beta/gcmcore-osx-2.0.79.64449.pkg</GcmCoreOSXPackageUrl>
+
+    <!-- Signing certificates -->
+    <AuthenticodeCert>Microsoft400</AuthenticodeCert>
+    <MacFilesCert>8003</MacFilesCert>
+
+    <!-- Compiled build constants -->
+    <ExternalBinariesDirectoryName>extbin</ExternalBinariesDirectoryName>
+  </PropertyGroup>
+
+  <!-- Common build-only dependencies -->
+  <ItemGroup>
+    <!-- <PackageReference Include="StyleCop.Analyzers" Version="1.0.2" PrivateAssets="all"/> -->
+  </ItemGroup>
+
+  <!-- Define default metadata on *FilesToSign items -->
+  <ItemDefinitionGroup>
+    <FilesToSign>
+      <Authenticode>$(AuthenticodeCert)</Authenticode>
+      <InProject>false</InProject>
+    </FilesToSign>
+    <MacFilesToSign>
+      <InProject>false</InProject>
+    </MacFilesToSign>
+  </ItemDefinitionGroup>
+</Project>

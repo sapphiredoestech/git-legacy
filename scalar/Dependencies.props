@@ -1,0 +1,23 @@
+<Project>
+
+  <ItemGroup>
+    <!-- Product dependencies -->
+    <PackageReference Update="CommandLineParser"               Version="2.6.0"  />
+    <PackageReference Update="Newtonsoft.Json"                 Version="13.0.1" />
+    <PackageReference Update="NuGet.CommandLine"               Version="5.4.0"  />
+    <PackageReference Update="NuGet.Commands"                  Version="5.4.0"  />
+
+    <!-- Build-only dependencies -->
+    <PackageReference Update="MicroBuild.Core"                 Version="0.2.0" PrivateAssets="all" />
+    <PackageReference Update="Tools.InnoSetup"                 Version="6.0.2" PrivateAssets="all" />
+
+    <!-- Test-only dependencies -->
+    <PackageReference Update="Microsoft.NET.Test.Sdk"          Version="15.9.0" />
+    <PackageReference Update="Moq"                             Version="4.13.0" />
+    <PackageReference Update="nunit"                           Version="3.11.0" />
+    <PackageReference Update="NUnit3TestAdapter"               Version="3.12.0" />
+    <PackageReference Update="NUnitLite"                       Version="3.12.0" />
+    <PackageReference Update="Microsoft.Data.Sqlite"           Version="2.2.4"  />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,15 @@
+<Project>
+  <!-- Define common properties that rely on SDK/props-defined properties -->
+  <PropertyGroup>
+    <Version>$(ScalarVersion)</Version>
+  </PropertyGroup>
+
+  <!-- Include custom MSBuild targets/tasks -->
+  <Import Project="$(ScalarBuildTasks)Scalar.targets" />
+
+  <!-- Include signing targets -->
+  <Import Project="Signing.targets" />
+
+  <!-- Unified dependency versions -->
+  <Import Project="Dependencies.props" />
+</Project>
