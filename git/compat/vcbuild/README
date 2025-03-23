@@ -1,0 +1,106 @@
+The Steps to Build Git with VS2015 or VS2017 from the command line.
+
+1. Install the "vcpkg" open source package manager and build essential
+   third-party libraries.  The steps for this have been captured in a
+   set of convenience scripts.  These can be run from a stock Command
+   Prompt or from an SDK bash window:
+
+   $ cd <repo_root>
+   $ ./compat/vcbuild/vcpkg_install.bat x64-windows
+
+   or
+
+   $ ./compat/vcbuild/vcpkg_install.bat arm64-windows
+
+   The vcpkg tools and all of the third-party sources will be installed
+   in this folder:
+      <repo_root>/compat/vcbuild/vcpkg/
+
+   A file will be created with a set of Makefile macros pointing to a
+   unified "include", "lib", and "bin" directory (release and debug) for
+   all of the required packages.  This file will be included by the main
+   Makefile:
+      <repo_root>/compat/vcbuild/MSVC-DEFS-GEN
+
+2. OPTIONALLY copy the third-party *.dll and *.pdb files into the repo
+   root to make it easier to run and debug git.exe without having to
+   manipulate your PATH.  This is especially true for debug sessions in
+   Visual Studio.
+
+   Use ONE of the following forms which should match how you want to
+   compile git.exe.
+
+   $ ./compat/vcbuild/vcpkg_copy_dlls.bat debug
+   $ ./compat/vcbuild/vcpkg_copy_dlls.bat release
+
+3. Build git using MSVC from an SDK bash window using one of the
+   following commands:
+
+   $ make MSVC=1
+   $ make MSVC=1 DEBUG=1
+
+================================================================
+
+Alternatively, just open Git's top-level directory in Visual Studio, via
+`File>Open>Folder...`. This will use CMake internally to generate the
+project definitions. It will also install the vcpkg system and build the
+dependencies automatically. This will take a while.
+
+You can also generate the Visual Studio solution manually by downloading
+and running CMake explicitly rather than letting Visual Studio doing
+that implicitly.
+
+Another, deprecated option is to run `make vcxproj`. This option is
+superseded by the CMake-based build, and will be removed at some point.
+
+================================================================
+The Steps of Build Git with VS2008
+
+1. You need the build environment, which contains the Git dependencies
+   to be able to compile, link and run Git with MSVC.
+
+   You can either use the binary repository:
+
+       WWW: http://repo.or.cz/w/msvcgit.git
+       Git: git clone git://repo.or.cz/msvcgit.git
+       Zip: http://repo.or.cz/w/msvcgit.git?a=snapshot;h=master;sf=zip
+
+   and call the setup_32bit_env.cmd batch script before compiling Git,
+   (see repo/package README for details), or the source repository:
+
+       WWW: http://repo.or.cz/w/gitbuild.git
+       Git: git clone git://repo.or.cz/gitbuild.git
+       Zip: (None, as it's a project with submodules)
+
+   and build the support libs as instructed in that repo/package.
+
+2. Ensure you have the msysgit environment in your path, so you have
+   GNU Make, bash and perl available.
+
+       WWW: http://repo.or.cz/w/msysgit.git
+       Git: git clone git://repo.or.cz/msysgit.git
+       Zip: http://repo.or.cz/w/msysgit.git?a=snapshot;h=master;sf=zip
+
+   This environment is also needed when you use the resulting
+   executables, since Git might need to run scripts which are part of
+   the git operations.
+
+3. Inside Git's directory run the command:
+       make generated-hdrs
+   to generate the header file needed to compile git.
+
+4. Then either build Git with the GNU Make Makefile in the Git projects
+   root
+       make MSVC=1
+   or generate Visual Studio solution/projects (.sln/.vcproj) with the
+   command
+       perl contrib/buildsystems/generate -g Vcproj
+   and open and build the solution with the IDE
+       devenv git.sln /useenv
+   or build with the IDE build engine directly from the command line
+       devenv git.sln /useenv /build "Release|Win32"
+   The /useenv option is required, so Visual Studio picks up the
+   environment variables for the support libraries required to build
+   Git, which you set up in step 1.
+
+Done!
