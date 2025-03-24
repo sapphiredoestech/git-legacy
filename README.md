@@ -1,6 +1,6 @@
 # Git Legacy
 
-Git Legacy is a set of tools to port Git and its most commonly used plugins to older releases of Windows.
+Git Legacy is a port of Git and its most commonly used plugins to older releases of Windows.
 
 ## Platform support
 
