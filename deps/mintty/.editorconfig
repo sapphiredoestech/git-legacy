@@ -1,0 +1,8 @@
+root = true
+
+[*]
+trim_trailing_whitespace = false
+
+[*.[ch]]
+indent_style = space
+indent_size = 2

@@ -1,0 +1,10 @@
+Building mintty requires gcc >= 3.x for Cygwin or MSYS. It can not be 
+built with a MinGW compiler, because it relies on some Unix facilities 
+that are not available on plain Windows, in particular pseudo terminal 
+devices (ptys).
+
+Building mintty on cygwin needs packages `gcc-core` and `make`.
+To compile, go into subdirectory `src` and run `make`.
+To install, copy `mintty.exe` from subdirectory `bin` to an appropriate place.
+
+See the top of the Makefiles for further make targets and options.
