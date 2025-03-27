@@ -50,59 +50,30 @@ static void down_ref(void *p)
 
 static int test_property_string(void)
 {
-    OSSL_LIB_CTX *ctx;
-    OSSL_METHOD_STORE *store = NULL;
+    OSSL_METHOD_STORE *store;
     int res = 0;
     OSSL_PROPERTY_IDX i, j;
 
-    /*-
-     * Use our own library context because we depend on ordering from a
-     * pristine state.
-     */
-    if (TEST_ptr(ctx = OSSL_LIB_CTX_new())
-        && TEST_ptr(store = ossl_method_store_new(ctx))
-        && TEST_int_eq(ossl_property_name(ctx, "fnord", 0), 0)
-        && TEST_int_ne(ossl_property_name(ctx, "fnord", 1), 0)
-        && TEST_int_ne(ossl_property_name(ctx, "name", 1), 0)
-        /* Pre loaded names */
-        && TEST_str_eq(ossl_property_name_str(ctx, 1), "provider")
-        && TEST_str_eq(ossl_property_name_str(ctx, 2), "version")
-        && TEST_str_eq(ossl_property_name_str(ctx, 3), "fips")
-        && TEST_str_eq(ossl_property_name_str(ctx, 4), "output")
-        && TEST_str_eq(ossl_property_name_str(ctx, 5), "input")
-        && TEST_str_eq(ossl_property_name_str(ctx, 6), "structure")
-        /* The names we added */
-        && TEST_str_eq(ossl_property_name_str(ctx, 7), "fnord")
-        && TEST_str_eq(ossl_property_name_str(ctx, 8), "name")
-        /* Out of range */
-        && TEST_ptr_null(ossl_property_name_str(ctx, 0))
-        && TEST_ptr_null(ossl_property_name_str(ctx, 9))
+    if (TEST_ptr(store = ossl_method_store_new(NULL))
+        && TEST_int_eq(ossl_property_name(NULL, "fnord", 0), 0)
+        && TEST_int_ne(ossl_property_name(NULL, "fnord", 1), 0)
+        && TEST_int_ne(ossl_property_name(NULL, "name", 1), 0)
         /* Property value checks */
-        && TEST_int_eq(ossl_property_value(ctx, "fnord", 0), 0)
-        && TEST_int_ne(i = ossl_property_value(ctx, "no", 0), 0)
-        && TEST_int_ne(j = ossl_property_value(ctx, "yes", 0), 0)
+        && TEST_int_eq(ossl_property_value(NULL, "fnord", 0), 0)
+        && TEST_int_ne(i = ossl_property_value(NULL, "no", 0), 0)
+        && TEST_int_ne(j = ossl_property_value(NULL, "yes", 0), 0)
         && TEST_int_ne(i, j)
-        && TEST_int_eq(ossl_property_value(ctx, "yes", 1), j)
-        && TEST_int_eq(ossl_property_value(ctx, "no", 1), i)
-        && TEST_int_ne(i = ossl_property_value(ctx, "illuminati", 1), 0)
-        && TEST_int_eq(j = ossl_property_value(ctx, "fnord", 1), i + 1)
-        && TEST_int_eq(ossl_property_value(ctx, "fnord", 1), j)
-        /* Pre loaded values */
-        && TEST_str_eq(ossl_property_value_str(ctx, 1), "yes")
-        && TEST_str_eq(ossl_property_value_str(ctx, 2), "no")
-        /* The value we added */
-        && TEST_str_eq(ossl_property_value_str(ctx, 3), "illuminati")
-        && TEST_str_eq(ossl_property_value_str(ctx, 4), "fnord")
-        /* Out of range */
-        && TEST_ptr_null(ossl_property_value_str(ctx, 0))
-        && TEST_ptr_null(ossl_property_value_str(ctx, 5))
+        && TEST_int_eq(ossl_property_value(NULL, "yes", 1), j)
+        && TEST_int_eq(ossl_property_value(NULL, "no", 1), i)
+        && TEST_int_ne(i = ossl_property_value(NULL, "illuminati", 1), 0)
+        && TEST_int_eq(j = ossl_property_value(NULL, "fnord", 1), i + 1)
+        && TEST_int_eq(ossl_property_value(NULL, "fnord", 1), j)
         /* Check name and values are distinct */
-        && TEST_int_eq(ossl_property_value(ctx, "cold", 0), 0)
-        && TEST_int_ne(ossl_property_name(ctx, "fnord", 0),
-                       ossl_property_value(ctx, "fnord", 0)))
+        && TEST_int_eq(ossl_property_value(NULL, "cold", 0), 0)
+        && TEST_int_ne(ossl_property_name(NULL, "fnord", 0),
+                       ossl_property_value(NULL, "fnord", 0)))
         res = 1;
     ossl_method_store_free(store);
-    OSSL_LIB_CTX_free(ctx);
     return res;
 }
 
@@ -136,10 +107,6 @@ static const struct {
     { "n=0x3", "n=3", 1 },
     { "n=0x3", "n=-3", -1 },
     { "n=0x33", "n=51", 1 },
-    { "n=0x123456789abcdef", "n=0x123456789abcdef", 1 },
-    { "n=0x7fffffffffffffff", "n=0x7fffffffffffffff", 1 },   /* INT64_MAX */
-    { "n=9223372036854775807", "n=9223372036854775807", 1 }, /* INT64_MAX */
-    { "n=0777777777777777777777", "n=0777777777777777777777", 1 }, /* INT64_MAX */
     { "n=033", "n=27", 1 },
     { "n=0", "n=00", 1 },
     { "n=0x0", "n=0", 1 },
@@ -202,9 +169,6 @@ static const struct {
     { 1, "a=2, n=012345678" },  /* Bad octal digit */
     { 0, "n=0x28FG, a=3" },     /* Bad hex digit */
     { 0, "n=145d, a=2" },       /* Bad decimal digit */
-    { 0, "n=0x8000000000000000, a=3" },     /* Hex overflow */
-    { 0, "n=922337203000000000d, a=2" },    /* Decimal overflow */
-    { 0, "a=2, n=1000000000000000000000" }, /* Octal overflow */
     { 1, "@='hello'" },         /* Invalid name */
     { 1, "n0123456789012345678901234567890123456789"
          "0123456789012345678901234567890123456789"
@@ -652,9 +616,6 @@ static struct {
     { "", "" },
     { "fips=3", "fips=3" },
     { "fips=-3", "fips=-3" },
-    { "provider='foo bar'", "provider='foo bar'" },
-    { "provider=\"foo bar'\"", "provider=\"foo bar'\"" },
-    { "provider=abc***", "provider='abc***'" },
     { NULL, "" }
 };
 

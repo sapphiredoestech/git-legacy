@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2025 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -11,7 +11,6 @@
 #include <openssl/evp.h>
 
 #include "../ssl/ssl_local.h"
-#include "internal/ssl_unwrap.h"
 #include "testutil.h"
 
 #define IVLEN   12
@@ -127,7 +126,7 @@ static unsigned char server_ats_iv[] = {
 };
 
 /* Mocked out implementations of various functions */
-int ssl3_digest_cached_records(SSL_CONNECTION *s, int keep)
+int ssl3_digest_cached_records(SSL *s, int keep)
 {
     return 1;
 }
@@ -135,7 +134,7 @@ int ssl3_digest_cached_records(SSL_CONNECTION *s, int keep)
 static int full_hash = 0;
 
 /* Give a hash of the currently set handshake */
-int ssl_handshake_hash(SSL_CONNECTION *s, unsigned char *out, size_t outlen,
+int ssl_handshake_hash(SSL *s, unsigned char *out, size_t outlen,
                        size_t *hashlen)
 {
     if (sizeof(hs_start_hash) > outlen
@@ -153,20 +152,21 @@ int ssl_handshake_hash(SSL_CONNECTION *s, unsigned char *out, size_t outlen,
     return 1;
 }
 
-const EVP_MD *ssl_handshake_md(SSL_CONNECTION *s)
+const EVP_MD *ssl_handshake_md(SSL *s)
 {
     return EVP_sha256();
 }
 
-int ssl_cipher_get_evp_cipher(SSL_CTX *ctx, const SSL_CIPHER *sslc,
-                                     const EVP_CIPHER **enc)
+void RECORD_LAYER_reset_read_sequence(RECORD_LAYER *rl)
 {
-    return 0;
 }
 
-int ssl_cipher_get_evp_md_mac(SSL_CTX *ctx, const SSL_CIPHER *sslc,
-                              const EVP_MD **md,
-                              int *mac_pkey_type, size_t *mac_secret_size)
+void RECORD_LAYER_reset_write_sequence(RECORD_LAYER *rl)
+{
+}
+
+int ssl_cipher_get_evp_cipher(SSL_CTX *ctx, const SSL_CIPHER *sslc,
+                                     const EVP_CIPHER **enc)
 {
     return 0;
 }
@@ -185,7 +185,7 @@ int tls1_alert_code(int code)
     return code;
 }
 
-int ssl_log_secret(SSL_CONNECTION *sc,
+int ssl_log_secret(SSL *ssl,
                    const char *label,
                    const uint8_t *secret,
                    size_t secret_len)
@@ -198,21 +198,20 @@ const EVP_MD *ssl_md(SSL_CTX *ctx, int idx)
     return EVP_sha256();
 }
 
-void ossl_statem_send_fatal(SSL_CONNECTION *s, int al)
+void ossl_statem_send_fatal(SSL *s, int al)
 {
 }
 
-void ossl_statem_fatal(SSL_CONNECTION *s, int al, int reason,
-                       const char *fmt, ...)
+void ossl_statem_fatal(SSL *s, int al, int reason, const char *fmt, ...)
 {
 }
 
-int ossl_statem_export_allowed(SSL_CONNECTION *s)
+int ossl_statem_export_allowed(SSL *s)
 {
     return 1;
 }
 
-int ossl_statem_export_early_allowed(SSL_CONNECTION *s)
+int ossl_statem_export_early_allowed(SSL *s)
 {
     return 1;
 }
@@ -225,21 +224,9 @@ void ssl_evp_md_free(const EVP_MD *md)
 {
 }
 
-int ssl_set_new_record_layer(SSL_CONNECTION *s, int version, int direction,
-                             int level, unsigned char *secret, size_t secretlen,
-                             unsigned char *key, size_t keylen,
-                             unsigned char *iv,  size_t ivlen,
-                             unsigned char *mackey, size_t mackeylen,
-                             const EVP_CIPHER *ciph, size_t taglen,
-                             int mactype, const EVP_MD *md,
-                             const SSL_COMP *comp, const EVP_MD *kdfdigest)
-{
-    return 0;
-}
-
 /* End of mocked out code */
 
-static int test_secret(SSL_CONNECTION *s, unsigned char *prk,
+static int test_secret(SSL *s, unsigned char *prk,
                        const unsigned char *label, size_t labellen,
                        const unsigned char *ref_secret,
                        const unsigned char *ref_key, const unsigned char *ref_iv)
@@ -287,8 +274,7 @@ static int test_secret(SSL_CONNECTION *s, unsigned char *prk,
 static int test_handshake_secrets(void)
 {
     SSL_CTX *ctx = NULL;
-    SSL *ssl = NULL;
-    SSL_CONNECTION *s;
+    SSL *s = NULL;
     int ret = 0;
     size_t hashsize;
     unsigned char out_master_secret[EVP_MAX_MD_SIZE];
@@ -298,8 +284,8 @@ static int test_handshake_secrets(void)
     if (!TEST_ptr(ctx))
         goto err;
 
-    ssl = SSL_new(ctx);
-    if (!TEST_ptr(ssl) || !TEST_ptr(s = SSL_CONNECTION_FROM_SSL_ONLY(ssl)))
+    s = SSL_new(ctx);
+    if (!TEST_ptr(s ))
         goto err;
 
     s->session = SSL_SESSION_new();
@@ -410,7 +396,7 @@ static int test_handshake_secrets(void)
 
     ret = 1;
  err:
-    SSL_free(ssl);
+    SSL_free(s);
     SSL_CTX_free(ctx);
     return ret;
 }

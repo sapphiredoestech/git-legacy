@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2025 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2006-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -150,17 +150,15 @@ int TS_RESP_verify_signature(PKCS7 *token, STACK_OF(X509) *certs,
     }
 
     if (signer_out) {
-        if (!X509_up_ref(signer))
-            goto err;
-
         *signer_out = signer;
+        X509_up_ref(signer);
     }
     ret = 1;
 
  err:
     BIO_free_all(p7bio);
     sk_X509_free(untrusted);
-    OSSL_STACK_OF_X509_free(chain);
+    sk_X509_pop_free(chain, X509_free);
     sk_X509_free(signers);
 
     return ret;
@@ -180,7 +178,7 @@ static int ts_verify_cert(X509_STORE *store, STACK_OF(X509) *untrusted,
     *chain = NULL;
     cert_ctx = X509_STORE_CTX_new();
     if (cert_ctx == NULL) {
-        ERR_raise(ERR_LIB_TS, ERR_R_X509_LIB);
+        ERR_raise(ERR_LIB_TS, ERR_R_MALLOC_FAILURE);
         goto err;
     }
     if (!X509_STORE_CTX_init(cert_ctx, store, signer, untrusted))
@@ -280,7 +278,7 @@ int TS_RESP_verify_token(TS_VERIFY_CTX *ctx, PKCS7 *token)
 }
 
 /*-
- * Verifies whether the 'token' contains a valid timestamp token
+ * Verifies whether the 'token' contains a valid time stamp token
  * with regards to the settings of the context. Only those checks are
  * carried out that are specified in the context:
  *      - Verifies the signature of the TS_TST_INFO.
@@ -450,15 +448,17 @@ static int ts_compute_imprint(BIO *data, TS_TST_INFO *tst_info,
     (void)ERR_pop_to_mark();
 
     length = EVP_MD_get_size(md);
-    if (length <= 0)
+    if (length < 0)
         goto err;
     *imprint_len = length;
-    if ((*imprint = OPENSSL_malloc(*imprint_len)) == NULL)
+    if ((*imprint = OPENSSL_malloc(*imprint_len)) == NULL) {
+        ERR_raise(ERR_LIB_TS, ERR_R_MALLOC_FAILURE);
         goto err;
+    }
 
     md_ctx = EVP_MD_CTX_new();
     if (md_ctx == NULL) {
-        ERR_raise(ERR_LIB_TS, ERR_R_EVP_LIB);
+        ERR_raise(ERR_LIB_TS, ERR_R_MALLOC_FAILURE);
         goto err;
     }
     if (!EVP_DigestInit(md_ctx, md))

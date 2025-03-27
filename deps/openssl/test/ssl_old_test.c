@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2022 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  * Copyright 2005 Nokia. All rights reserved.
  *
@@ -9,7 +9,7 @@
  * https://www.openssl.org/source/license.html
  */
 
-#include "internal/e_os.h"
+#include "e_os.h"
 
 /* Or gethostname won't be declared properly on Linux and GNU platforms. */
 #ifndef _BSD_SOURCE
@@ -56,7 +56,6 @@
 #endif
 #include <openssl/provider.h>
 #include "testutil.h"
-#include "testutil/output.h"
 
 /*
  * Or gethostname won't be declared properly
@@ -332,18 +331,6 @@ static int verify_alpn(SSL *client, SSL *server)
 
     OPENSSL_free(alpn_selected);
     alpn_selected = NULL;
-
-    if (client_proto == NULL && client_proto_len != 0) {
-        BIO_printf(bio_stdout,
-                   "Inconsistent SSL_get0_alpn_selected() for client!\n");
-        goto err;
-    }
-
-    if (server_proto == NULL && server_proto_len != 0) {
-        BIO_printf(bio_stdout,
-                   "Inconsistent SSL_get0_alpn_selected() for server!\n");
-        goto err;
-    }
 
     if (client_proto_len != server_proto_len) {
         BIO_printf(bio_stdout, "ALPN selected protocols differ!\n");
@@ -903,11 +890,11 @@ int main(int argc, char *argv[])
     int ret = EXIT_FAILURE;
     int client_auth = 0;
     int server_auth = 0, i;
-    struct app_verify_arg app_verify_arg = { APP_CALLBACK_STRING, 0 };
+    struct app_verify_arg app_verify_arg =
+        { APP_CALLBACK_STRING, 0 };
     SSL_CTX *c_ctx = NULL;
     const SSL_METHOD *meth = NULL;
-    SSL *c_ssl = NULL;
-    SSL *s_ssl = NULL;
+    SSL *c_ssl, *s_ssl;
     int number = 1, reuse = 0;
     int should_reuse = -1;
     int no_ticket = 0;
@@ -945,8 +932,7 @@ int main(int argc, char *argv[])
     verbose = 0;
     debug = 0;
 
-    test_open_streams();
-
+    bio_err = BIO_new_fp(stderr, BIO_NOCLOSE | BIO_FP_TEXT);
     bio_stdout = BIO_new_fp(stdout, BIO_NOCLOSE | BIO_FP_TEXT);
 
     s_cctx = SSL_CONF_CTX_new();
@@ -991,8 +977,7 @@ int main(int argc, char *argv[])
         if (strcmp(*argv, "-F") == 0) {
             fprintf(stderr,
                     "not compiled with FIPS support, so exiting without running.\n");
-            ret = EXIT_SUCCESS;
-            goto end;
+            EXIT(0);
         } else if (strcmp(*argv, "-server_auth") == 0)
             server_auth = 1;
         else if (strcmp(*argv, "-client_auth") == 0)
@@ -1044,7 +1029,7 @@ int main(int argc, char *argv[])
             dtls12 = 1;
         } else if (strcmp(*argv, "-dtls") == 0) {
             dtls = 1;
-        } else if (HAS_PREFIX(*argv, "-num")) {
+        } else if (strncmp(*argv, "-num", 4) == 0) {
             if (--argc < 1)
                 goto bad;
             number = atoi(*(++argv));
@@ -1259,7 +1244,7 @@ int main(int argc, char *argv[])
     if (ssl3 + tls1 + tls1_1 + tls1_2 + dtls + dtls1 + dtls12 > 1) {
         fprintf(stderr, "At most one of -ssl3, -tls1, -tls1_1, -tls1_2, -dtls, -dtls1 or -dtls12 should "
                 "be requested.\n");
-        goto end;
+        EXIT(1);
     }
 
 #ifdef OPENSSL_NO_SSL3
@@ -1312,7 +1297,7 @@ int main(int argc, char *argv[])
                 "the test anyway (and\n-d to see what happens), "
                 "or add one of -ssl3, -tls1, -tls1_1, -tls1_2, -dtls, -dtls1, -dtls12, -reuse\n"
                 "to avoid protocol mismatch.\n");
-        goto end;
+        EXIT(1);
     }
 
     if (print_time) {
@@ -1329,15 +1314,17 @@ int main(int argc, char *argv[])
     if (comp == COMP_ZLIB)
         cm = COMP_zlib();
     if (cm != NULL) {
-        if (SSL_COMP_add_compression_method(comp, cm) != 0) {
-            fprintf(stderr, "Failed to add compression method\n");
+        if (COMP_get_type(cm) != NID_undef) {
+            if (SSL_COMP_add_compression_method(comp, cm) != 0) {
+                fprintf(stderr, "Failed to add compression method\n");
+                ERR_print_errors_fp(stderr);
+            }
+        } else {
+            fprintf(stderr,
+                    "Warning: %s compression not supported\n",
+                    comp == COMP_ZLIB ? "zlib" : "unknown");
             ERR_print_errors_fp(stderr);
         }
-    } else {
-        fprintf(stderr,
-                "Warning: %s compression not supported\n",
-                comp == COMP_ZLIB ? "zlib" : "unknown");
-        ERR_print_errors_fp(stderr);
     }
     ssl_comp_methods = SSL_COMP_get_compression_methods();
     n = sk_SSL_COMP_num(ssl_comp_methods);
@@ -1345,7 +1332,7 @@ int main(int argc, char *argv[])
         int j;
         printf("Available compression methods:");
         for (j = 0; j < n; j++) {
-            const SSL_COMP *c = sk_SSL_COMP_value(ssl_comp_methods, j);
+            SSL_COMP *c = sk_SSL_COMP_value(ssl_comp_methods, j);
             printf("  %s:%d", SSL_COMP_get0_name(c), SSL_COMP_get_id(c));
         }
         printf("\n");
@@ -1538,10 +1525,8 @@ int main(int argc, char *argv[])
             ERR_print_errors(bio_err);
             goto end;
         }
-        if (!SSL_CTX_set0_tmp_dh_pkey(s_ctx, dhpkey))
-            EVP_PKEY_free(dhpkey);
-        if (!SSL_CTX_set0_tmp_dh_pkey(s_ctx2, dhpkey))
-            EVP_PKEY_free(dhpkey);
+        SSL_CTX_set0_tmp_dh_pkey(s_ctx, dhpkey);
+        SSL_CTX_set0_tmp_dh_pkey(s_ctx2, dhpkey);
     }
 #endif
 
@@ -1772,8 +1757,6 @@ int main(int argc, char *argv[])
 
     c_ssl = SSL_new(c_ctx);
     s_ssl = SSL_new(s_ctx);
-    if (c_ssl == NULL || s_ssl == NULL)
-        goto end;
 
     if (sn_client)
         SSL_set_tlsext_host_name(c_ssl, sn_client);
@@ -1834,11 +1817,10 @@ int main(int argc, char *argv[])
         case BIO_IPV4:
         case BIO_IPV6:
             ret = EXIT_FAILURE;
-            goto end;
+            goto err;
 #endif
         }
-        if (ret != EXIT_SUCCESS)
-            break;
+        if (ret != EXIT_SUCCESS)  break;
     }
 
     if (should_negotiate && ret == EXIT_SUCCESS &&
@@ -1848,13 +1830,13 @@ int main(int argc, char *argv[])
         if (version < 0) {
             BIO_printf(bio_err, "Error parsing: %s\n", should_negotiate);
             ret = EXIT_FAILURE;
-            goto end;
+            goto err;
         }
         if (SSL_version(c_ssl) != version) {
             BIO_printf(bio_err, "Unexpected version negotiated. "
                 "Expected: %s, got %s\n", should_negotiate, SSL_get_version(c_ssl));
             ret = EXIT_FAILURE;
-            goto end;
+            goto err;
         }
     }
 
@@ -1865,20 +1847,20 @@ int main(int argc, char *argv[])
                 "Expected: %d, server: %d, client: %d\n", should_reuse,
                 SSL_session_reused(s_ssl), SSL_session_reused(c_ssl));
             ret = EXIT_FAILURE;
-            goto end;
+            goto err;
         }
     }
 
     if (server_sess_out != NULL) {
         if (write_session(server_sess_out, SSL_get_session(s_ssl)) == 0) {
             ret = EXIT_FAILURE;
-            goto end;
+            goto err;
         }
     }
     if (client_sess_out != NULL) {
         if (write_session(client_sess_out, SSL_get_session(c_ssl)) == 0) {
             ret = EXIT_FAILURE;
-            goto end;
+            goto err;
         }
     }
 
@@ -1904,9 +1886,11 @@ int main(int argc, char *argv[])
 #endif
     }
 
- end:
+ err:
     SSL_free(s_ssl);
     SSL_free(c_ssl);
+
+ end:
     SSL_CTX_free(s_ctx);
     SSL_CTX_free(s_ctx2);
     SSL_CTX_free(c_ctx);
@@ -1924,8 +1908,7 @@ int main(int argc, char *argv[])
     OSSL_PROVIDER_unload(thisprov);
     OSSL_LIB_CTX_free(libctx);
 
-    test_close_streams();
-
+    BIO_free(bio_err);
     EXIT(ret);
 }
 
@@ -1965,7 +1948,7 @@ int doit_localhost(SSL *s_ssl, SSL *c_ssl, int family, long count,
     {
         int st_connect = 0, st_accept = 0;
 
-        while (!st_connect || !st_accept) {
+        while(!st_connect || !st_accept) {
             if (!st_connect) {
                 if (BIO_do_connect(client) <= 0) {
                     if (!BIO_should_retry(client))

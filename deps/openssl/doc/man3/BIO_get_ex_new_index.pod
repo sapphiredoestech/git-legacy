@@ -89,10 +89,10 @@ TYPE_get_ex_new_index() is a macro that calls CRYPTO_get_ex_new_index()
 with the correct B<index> value.
 
 TYPE_set_ex_data() is a function that calls CRYPTO_set_ex_data() with
-an offset into the opaque exdata part of the TYPE object. I<d> B<MUST NOT> be NULL.
+an offset into the opaque exdata part of the TYPE object.
 
 TYPE_get_ex_data() is a function that calls CRYPTO_get_ex_data() with
-an offset into the opaque exdata part of the TYPE object. I<d> B<MUST NOT> be NULL.
+an offset into the opaque exdata part of the TYPE object.
 
 For compatibility with previous releases, the exdata index of zero is
 reserved for "application data." There are two convenience functions for

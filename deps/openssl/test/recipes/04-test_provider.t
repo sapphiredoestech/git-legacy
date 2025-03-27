@@ -12,17 +12,10 @@ use OpenSSL::Test::Utils;
 
 setup("test_provider");
 
-plan tests => 3;
+plan tests => 2;
 
 ok(run(test(['provider_test'])), "provider_test");
 
 $ENV{"OPENSSL_MODULES"} = bldtop_dir("test");
 
 ok(run(test(['provider_test', '-loaded'])), "provider_test -loaded");
-
- SKIP: {
-     skip "no module support", 1 if disabled("module");
-
-     ok(run(app(['openssl', 'list', '-provider', 'p_minimal',
-                 '-providers', '-verbose'])));
-}

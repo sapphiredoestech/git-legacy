@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -8,8 +8,6 @@
  */
 
 #include <openssl/store.h>
-
-#include "internal/nelem.h"
 
 static char *type_strings[] = {
     "Name",                      /* OSSL_STORE_INFO_NAME */
@@ -22,7 +20,7 @@ static char *type_strings[] = {
 
 const char *OSSL_STORE_INFO_type_string(int type)
 {
-    int types = OSSL_NELEM(type_strings);
+    int types = sizeof(type_strings) / sizeof(type_strings[0]);
 
     if (type < 1 || type > types)
         return NULL;

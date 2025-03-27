@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2017 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -54,7 +54,7 @@ static int read_key(STANZA *s)
         s->curr++;
         if (!TEST_int_gt(BIO_puts(s->key, tmpbuf), 0))
             return 0;
-        if (HAS_PREFIX(tmpbuf, "-----END"))
+        if (strncmp(tmpbuf, "-----END", 8) == 0)
             return 1;
     }
     TEST_error("Can't find key end");
@@ -88,31 +88,30 @@ int test_readstanza(STANZA *s)
     PAIR *pp = s->pairs;
     char *p, *equals, *key;
     const char *value;
-    static char buff[131072];
 
-    for (s->numpairs = 0; BIO_gets(s->fp, buff, sizeof(buff)); ) {
+    for (s->numpairs = 0; BIO_gets(s->fp, s->buff, sizeof(s->buff)); ) {
         s->curr++;
-        if (!TEST_ptr(p = strchr(buff, '\n'))) {
+        if (!TEST_ptr(p = strchr(s->buff, '\n'))) {
             TEST_info("Line %d too long", s->curr);
             return 0;
         }
         *p = '\0';
 
         /* Blank line marks end of tests. */
-        if (buff[0] == '\0')
+        if (s->buff[0] == '\0')
             break;
 
         /* Lines starting with a pound sign are ignored. */
-        if (buff[0] == '#')
+        if (s->buff[0] == '#')
             continue;
 
         /* Parse into key=value */
-        if (!TEST_ptr(equals = strchr(buff, '='))) {
+        if (!TEST_ptr(equals = strchr(s->buff, '='))) {
             TEST_info("Missing = at line %d\n", s->curr);
             return 0;
         }
         *equals++ = '\0';
-        if (!TEST_ptr(key = strip_spaces(buff))) {
+        if (!TEST_ptr(key = strip_spaces(s->buff))) {
             TEST_info("Empty field at line %d\n", s->curr);
             return 0;
         }
@@ -127,9 +126,11 @@ int test_readstanza(STANZA *s)
         if (s->numpairs == 0)
             s->start = s->curr;
 
-        if (strcmp(key, "PrivateKey") == 0
-                || strcmp(key, "PublicKey") == 0
-                || strcmp(key, "ParamKey") == 0) {
+        if (strcmp(key, "PrivateKey") == 0) {
+            if (!read_key(s))
+                return 0;
+        }
+        if (strcmp(key, "PublicKey") == 0) {
             if (!read_key(s))
                 return 0;
         }

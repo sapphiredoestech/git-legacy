@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -61,7 +61,7 @@ int X509v3_get_ext_by_OBJ(const STACK_OF(X509_EXTENSION) *sk,
 int X509v3_get_ext_by_critical(const STACK_OF(X509_EXTENSION) *sk, int crit,
                                int lastpos)
 {
-    int n, c;
+    int n;
     X509_EXTENSION *ex;
 
     if (sk == NULL)
@@ -72,9 +72,7 @@ int X509v3_get_ext_by_critical(const STACK_OF(X509_EXTENSION) *sk, int crit,
     n = sk_X509_EXTENSION_num(sk);
     for (; lastpos < n; lastpos++) {
         ex = sk_X509_EXTENSION_value(sk, lastpos);
-        c = X509_EXTENSION_get_critical(ex);
-        crit = crit != 0;
-        if (c == crit)
+        if (((ex->critical > 0) && crit) || ((ex->critical <= 0) && !crit))
             return lastpos;
     }
     return -1;
@@ -107,14 +105,12 @@ STACK_OF(X509_EXTENSION) *X509v3_add_ext(STACK_OF(X509_EXTENSION) **x,
 
     if (x == NULL) {
         ERR_raise(ERR_LIB_X509, ERR_R_PASSED_NULL_PARAMETER);
-        goto err;
+        goto err2;
     }
 
     if (*x == NULL) {
-        if ((sk = sk_X509_EXTENSION_new_null()) == NULL) {
-            ERR_raise(ERR_LIB_X509, ERR_R_CRYPTO_LIB);
+        if ((sk = sk_X509_EXTENSION_new_null()) == NULL)
             goto err;
-        }
     } else
         sk = *x;
 
@@ -124,52 +120,20 @@ STACK_OF(X509_EXTENSION) *X509v3_add_ext(STACK_OF(X509_EXTENSION) **x,
     else if (loc < 0)
         loc = n;
 
-    if ((new_ex = X509_EXTENSION_dup(ex)) == NULL) {
-        ERR_raise(ERR_LIB_X509, ERR_R_ASN1_LIB);
+    if ((new_ex = X509_EXTENSION_dup(ex)) == NULL)
+        goto err2;
+    if (!sk_X509_EXTENSION_insert(sk, new_ex, loc))
         goto err;
-    }
-    if (!sk_X509_EXTENSION_insert(sk, new_ex, loc)) {
-        ERR_raise(ERR_LIB_X509, ERR_R_CRYPTO_LIB);
-        goto err;
-    }
     if (*x == NULL)
         *x = sk;
     return sk;
  err:
+    ERR_raise(ERR_LIB_X509, ERR_R_MALLOC_FAILURE);
+ err2:
     X509_EXTENSION_free(new_ex);
     if (x != NULL && *x == NULL)
         sk_X509_EXTENSION_free(sk);
     return NULL;
-}
-
-/* This returns NULL also in non-error case *target == NULL && sk_X509_EXTENSION_num(exts) <= 0 */
-STACK_OF(X509_EXTENSION) *X509v3_add_extensions(STACK_OF(X509_EXTENSION) **target,
-                                                const STACK_OF(X509_EXTENSION) *exts)
-{
-    int i;
-
-    if (target == NULL) {
-        ERR_raise(ERR_LIB_X509, ERR_R_PASSED_NULL_PARAMETER);
-        return NULL;
-    }
-
-    for (i = 0; i < sk_X509_EXTENSION_num(exts); i++) {
-        X509_EXTENSION *ext = sk_X509_EXTENSION_value(exts, i);
-        ASN1_OBJECT *obj = X509_EXTENSION_get_object(ext);
-        int idx = X509v3_get_ext_by_OBJ(*target, obj, -1);
-
-        /* Does extension exist in target? */
-        if (idx != -1) {
-            /* Delete all extensions of same type */
-            do {
-                X509_EXTENSION_free(sk_X509_EXTENSION_delete(*target, idx));
-                idx = X509v3_get_ext_by_OBJ(*target, obj, -1);
-            } while (idx != -1);
-        }
-        if (!X509v3_add_ext(target, ext, -1))
-            return NULL;
-    }
-    return *target;
 }
 
 X509_EXTENSION *X509_EXTENSION_create_by_NID(X509_EXTENSION **ex, int nid,
@@ -198,7 +162,7 @@ X509_EXTENSION *X509_EXTENSION_create_by_OBJ(X509_EXTENSION **ex,
 
     if ((ex == NULL) || (*ex == NULL)) {
         if ((ret = X509_EXTENSION_new()) == NULL) {
-            ERR_raise(ERR_LIB_X509, ERR_R_ASN1_LIB);
+            ERR_raise(ERR_LIB_X509, ERR_R_MALLOC_FAILURE);
             return NULL;
         }
     } else
@@ -233,7 +197,7 @@ int X509_EXTENSION_set_critical(X509_EXTENSION *ex, int crit)
 {
     if (ex == NULL)
         return 0;
-    ex->critical = (crit) ? 0xFF : 0;
+    ex->critical = (crit) ? 0xFF : -1;
     return 1;
 }
 

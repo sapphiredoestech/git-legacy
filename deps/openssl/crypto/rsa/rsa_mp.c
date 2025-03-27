@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2017-2021 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright 2017 BaishanCloud. All rights reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -33,8 +33,10 @@ RSA_PRIME_INFO *ossl_rsa_multip_info_new(void)
     RSA_PRIME_INFO *pinfo;
 
     /* create an RSA_PRIME_INFO structure */
-    if ((pinfo = OPENSSL_zalloc(sizeof(RSA_PRIME_INFO))) == NULL)
+    if ((pinfo = OPENSSL_zalloc(sizeof(RSA_PRIME_INFO))) == NULL) {
+        ERR_raise(ERR_LIB_RSA, ERR_R_MALLOC_FAILURE);
         return NULL;
+    }
     if ((pinfo->r = BN_secure_new()) == NULL)
         goto err;
     if ((pinfo->d = BN_secure_new()) == NULL)
@@ -97,7 +99,7 @@ int ossl_rsa_multip_calc_product(RSA *rsa)
 
 int ossl_rsa_multip_cap(int bits)
 {
-    int cap = RSA_MAX_PRIME_NUM;
+    int cap = 5;
 
     if (bits < 1024)
         cap = 2;

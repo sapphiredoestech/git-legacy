@@ -12,7 +12,6 @@ Groups
 
  * OpenSSL Software Services, Inc.
  * OpenSSL Software Foundation, Inc.
- * Google LLC
 
 Individuals
 -----------
@@ -49,5 +48,4 @@ Individuals
  * Tim Hudson
  * Tomáš Mráz
  * Ulf Möller
- * Valerii Krygin
  * Viktor Dukhovni

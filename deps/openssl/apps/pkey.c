@@ -83,7 +83,6 @@ int pkey_main(int argc, char **argv)
     char *point_format = NULL;
 #endif
 
-    opt_set_unknown_name("cipher");
     prog = opt_init(argc, argv, pkey_options);
     while ((o = opt_next()) != OPT_EOF) {
         switch (o) {
@@ -172,7 +171,8 @@ int pkey_main(int argc, char **argv)
     }
 
     /* No extra arguments. */
-    if (!opt_check_rest_arg(NULL))
+    argc = opt_num_rest();
+    if (argc != 0)
         goto opthelp;
 
     if (text && text_pub)
@@ -190,8 +190,10 @@ int pkey_main(int argc, char **argv)
 
     private = (!noout && !pubout) || (text && !text_pub);
 
-    if (!opt_cipher(ciphername, &cipher))
-        goto opthelp;
+    if (ciphername != NULL) {
+        if (!opt_cipher(ciphername, &cipher))
+            goto opthelp;
+    }
     if (cipher == NULL) {
         if (passoutarg != NULL)
             BIO_printf(bio_err,
@@ -208,15 +210,15 @@ int pkey_main(int argc, char **argv)
         goto end;
     }
 
+    out = bio_open_owner(outfile, outformat, private);
+    if (out == NULL)
+        goto end;
+
     if (pubin)
         pkey = load_pubkey(infile, informat, 1, passin, e, "Public Key");
     else
         pkey = load_key(infile, informat, 1, passin, e, "key");
     if (pkey == NULL)
-        goto end;
-
-    out = bio_open_owner(outfile, outformat, private);
-    if (out == NULL)
         goto end;
 
 #ifndef OPENSSL_NO_EC

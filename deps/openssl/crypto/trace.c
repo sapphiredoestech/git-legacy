@@ -18,7 +18,6 @@
 #include "internal/nelem.h"
 #include "internal/refcount.h"
 #include "crypto/cryptlib.h"
-#include "crypto/ctype.h"
 
 #ifndef OPENSSL_NO_TRACE
 
@@ -138,11 +137,8 @@ static const struct trace_category_st
     TRACE_CATEGORY_(STORE),
     TRACE_CATEGORY_(DECODER),
     TRACE_CATEGORY_(ENCODER),
-    TRACE_CATEGORY_(REF_COUNT),
-    TRACE_CATEGORY_(HTTP),
-    TRACE_CATEGORY_(PROVIDER),
-    TRACE_CATEGORY_(QUERY),
-}; /* KEEP THIS LIST IN SYNC with #define OSSL_TRACE_CATEGORY_... in trace.h */
+    TRACE_CATEGORY_(REF_COUNT)
+};
 
 const char *OSSL_trace_get_category_name(int num)
 {
@@ -477,7 +473,7 @@ BIO *OSSL_trace_begin(int category)
     char *prefix = NULL;
 
     category = ossl_trace_get_category(category);
-    if (category < 0 || !OSSL_trace_enabled(category))
+    if (category < 0)
         return NULL;
 
     channel = trace_channels[category].bio;
@@ -504,7 +500,7 @@ BIO *OSSL_trace_begin(int category)
     return channel;
 }
 
-void OSSL_trace_end(int category, BIO *channel)
+void OSSL_trace_end(int category, BIO * channel)
 {
 #ifndef OPENSSL_NO_TRACE
     char *suffix = NULL;
@@ -532,28 +528,4 @@ void OSSL_trace_end(int category, BIO *channel)
         CRYPTO_THREAD_unlock(trace_lock);
     }
 #endif
-}
-
-int OSSL_trace_string(BIO *out, int text, int full,
-                      const unsigned char *data, size_t size)
-{
-    unsigned char buf[OSSL_TRACE_STRING_MAX + 1];
-    int len, i;
-
-    if (!full && size > OSSL_TRACE_STRING_MAX) {
-        BIO_printf(out, "[len %zu limited to %d]: ",
-                   size, OSSL_TRACE_STRING_MAX);
-        len = OSSL_TRACE_STRING_MAX;
-    } else {
-        len = (int)size;
-    }
-    if (!text) { /* mask control characters while preserving newlines */
-        for (i = 0; i < len; i++, data++)
-            buf[i] = (char)*data != '\n' && ossl_iscntrl((int)*data)
-                ? ' ' : *data;
-        if (len == 0 || data[-1] != '\n')
-            buf[len++] = '\n';
-        data = buf;
-    }
-    return BIO_printf(out, "%.*s", len, data);
 }

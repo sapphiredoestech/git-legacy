@@ -124,10 +124,9 @@ sub ::function_end_B
 
 sub ::file_end
 {   if (grep {/\b${nmdecor}OPENSSL_ia32cap_P\b/i} @out)
-    # OPENSSL_ia32cap_P size should match with internal/cryptlib.h OPENSSL_IA32CAP_P_MAX_INDEXES
     {	my $comm=<<___;
 ${drdecor}segment	.bss
-${drdecor}common	${nmdecor}OPENSSL_ia32cap_P 40
+${drdecor}common	${nmdecor}OPENSSL_ia32cap_P 16
 ___
 	# comment out OPENSSL_ia32cap_P declarations
 	grep {s/(^extern\s+${nmdecor}OPENSSL_ia32cap_P)/\;$1/} @out;

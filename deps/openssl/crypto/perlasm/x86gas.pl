@@ -167,8 +167,7 @@ sub ::file_end
 	}
     }
     if (grep {/\b${nmdecor}OPENSSL_ia32cap_P\b/i} @out) {
-    # OPENSSL_ia32cap_P size should match with internal/cryptlib.h OPENSSL_IA32CAP_P_MAX_INDEXES
-	my $tmp=".comm\t${nmdecor}OPENSSL_ia32cap_P,40";
+	my $tmp=".comm\t${nmdecor}OPENSSL_ia32cap_P,16";
 	if ($::macosx)	{ push (@out,"$tmp,2\n"); }
 	elsif ($::elf)	{ push (@out,"$tmp,4\n"); }
 	else		{ push (@out,"$tmp\n"); }

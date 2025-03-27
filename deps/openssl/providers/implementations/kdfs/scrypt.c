@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2017-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -20,12 +20,11 @@
 #include "prov/implementations.h"
 #include "prov/provider_ctx.h"
 #include "prov/providercommon.h"
-#include "prov/provider_util.h"
+#include "prov/implementations.h"
 
 #ifndef OPENSSL_NO_SCRYPT
 
 static OSSL_FUNC_kdf_newctx_fn kdf_scrypt_new;
-static OSSL_FUNC_kdf_dupctx_fn kdf_scrypt_dup;
 static OSSL_FUNC_kdf_freectx_fn kdf_scrypt_free;
 static OSSL_FUNC_kdf_reset_fn kdf_scrypt_reset;
 static OSSL_FUNC_kdf_derive_fn kdf_scrypt_derive;
@@ -55,7 +54,7 @@ typedef struct {
 
 static void kdf_scrypt_init(KDF_SCRYPT *ctx);
 
-static void *kdf_scrypt_new_inner(OSSL_LIB_CTX *libctx)
+static void *kdf_scrypt_new(void *provctx)
 {
     KDF_SCRYPT *ctx;
 
@@ -63,16 +62,13 @@ static void *kdf_scrypt_new_inner(OSSL_LIB_CTX *libctx)
         return NULL;
 
     ctx = OPENSSL_zalloc(sizeof(*ctx));
-    if (ctx == NULL)
+    if (ctx == NULL) {
+        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
         return NULL;
-    ctx->libctx = libctx;
+    }
+    ctx->libctx = PROV_LIBCTX_OF(provctx);
     kdf_scrypt_init(ctx);
     return ctx;
-}
-
-static void *kdf_scrypt_new(void *provctx)
-{
-    return kdf_scrypt_new_inner(PROV_LIBCTX_OF(provctx));
 }
 
 static void kdf_scrypt_free(void *vctx)
@@ -92,42 +88,8 @@ static void kdf_scrypt_reset(void *vctx)
     KDF_SCRYPT *ctx = (KDF_SCRYPT *)vctx;
 
     OPENSSL_free(ctx->salt);
-    ctx->salt = NULL;
     OPENSSL_clear_free(ctx->pass, ctx->pass_len);
-    ctx->pass = NULL;
     kdf_scrypt_init(ctx);
-}
-
-static void *kdf_scrypt_dup(void *vctx)
-{
-    const KDF_SCRYPT *src = (const KDF_SCRYPT *)vctx;
-    KDF_SCRYPT *dest;
-
-    dest = kdf_scrypt_new_inner(src->libctx);
-    if (dest != NULL) {
-        if (src->sha256 != NULL && !EVP_MD_up_ref(src->sha256))
-            goto err;
-        if (src->propq != NULL) {
-            dest->propq = OPENSSL_strdup(src->propq);
-            if (dest->propq == NULL)
-                goto err;
-        }
-        if (!ossl_prov_memdup(src->salt, src->salt_len,
-                              &dest->salt, &dest->salt_len)
-                || !ossl_prov_memdup(src->pass, src->pass_len,
-                                     &dest->pass , &dest->pass_len))
-            goto err;
-        dest->N = src->N;
-        dest->r = src->r;
-        dest->p = src->p;
-        dest->maxmem_bytes = src->maxmem_bytes;
-        dest->sha256 = src->sha256;
-    }
-    return dest;
-
- err:
-    kdf_scrypt_free(dest);
-    return NULL;
 }
 
 static void kdf_scrypt_init(KDF_SCRYPT *ctx)
@@ -150,8 +112,10 @@ static int scrypt_set_membuf(unsigned char **buffer, size_t *buflen,
     *buflen = 0;
 
     if (p->data_size == 0) {
-        if ((*buffer = OPENSSL_malloc(1)) == NULL)
+        if ((*buffer = OPENSSL_malloc(1)) == NULL) {
+            ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
             return 0;
+        }
     } else if (p->data != NULL) {
         if (!OSSL_PARAM_get_octet_string(p, (void **)buffer, 0, buflen))
             return 0;
@@ -164,6 +128,7 @@ static int set_digest(KDF_SCRYPT *ctx)
     EVP_MD_free(ctx->sha256);
     ctx->sha256 = EVP_MD_fetch(ctx->libctx, "sha256", ctx->propq);
     if (ctx->sha256 == NULL) {
+        OPENSSL_free(ctx);
         ERR_raise(ERR_LIB_PROV, PROV_R_UNABLE_TO_LOAD_SHA256);
         return 0;
     }
@@ -176,8 +141,10 @@ static int set_property_query(KDF_SCRYPT *ctx, const char *propq)
     ctx->propq = NULL;
     if (propq != NULL) {
         ctx->propq = OPENSSL_strdup(propq);
-        if (ctx->propq == NULL)
+        if (ctx->propq == NULL) {
+            ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
             return 0;
+        }
     }
     return 1;
 }
@@ -220,7 +187,7 @@ static int kdf_scrypt_set_ctx_params(void *vctx, const OSSL_PARAM params[])
     KDF_SCRYPT *ctx = vctx;
     uint64_t u64_value;
 
-    if (ossl_param_is_empty(params))
+    if (params == NULL)
         return 1;
 
     if ((p = OSSL_PARAM_locate_const(params, OSSL_KDF_PARAM_PASSWORD)) != NULL)
@@ -308,7 +275,6 @@ static const OSSL_PARAM *kdf_scrypt_gettable_ctx_params(ossl_unused void *ctx,
 
 const OSSL_DISPATCH ossl_kdf_scrypt_functions[] = {
     { OSSL_FUNC_KDF_NEWCTX, (void(*)(void))kdf_scrypt_new },
-    { OSSL_FUNC_KDF_DUPCTX, (void(*)(void))kdf_scrypt_dup },
     { OSSL_FUNC_KDF_FREECTX, (void(*)(void))kdf_scrypt_free },
     { OSSL_FUNC_KDF_RESET, (void(*)(void))kdf_scrypt_reset },
     { OSSL_FUNC_KDF_DERIVE, (void(*)(void))kdf_scrypt_derive },
@@ -318,7 +284,7 @@ const OSSL_DISPATCH ossl_kdf_scrypt_functions[] = {
     { OSSL_FUNC_KDF_GETTABLE_CTX_PARAMS,
       (void(*)(void))kdf_scrypt_gettable_ctx_params },
     { OSSL_FUNC_KDF_GET_CTX_PARAMS, (void(*)(void))kdf_scrypt_get_ctx_params },
-    OSSL_DISPATCH_END
+    { 0, NULL }
 };
 
 #define R(a,b) (((a) << (b)) | ((a) >> (32 - (b))))
@@ -522,8 +488,10 @@ static int scrypt_alg(const char *pass, size_t passlen,
         return 1;
 
     B = OPENSSL_malloc((size_t)(Blen + Vlen));
-    if (B == NULL)
+    if (B == NULL) {
+        ERR_raise(ERR_LIB_EVP, ERR_R_MALLOC_FAILURE);
         return 0;
+    }
     X = (uint32_t *)(B + Blen);
     T = X + 32 * r;
     V = T + 32 * r;

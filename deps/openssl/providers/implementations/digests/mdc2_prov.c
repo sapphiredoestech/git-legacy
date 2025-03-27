@@ -43,7 +43,7 @@ static int mdc2_set_ctx_params(void *vctx, const OSSL_PARAM params[])
 
     if (ctx == NULL)
         return 0;
-    if (ossl_param_is_empty(params))
+    if (params == NULL)
         return 1;
 
     p = OSSL_PARAM_locate_const(params, OSSL_DIGEST_PARAM_PAD_TYPE);

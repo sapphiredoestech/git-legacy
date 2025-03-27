@@ -1,6 +1,2 @@
 LIBS=../../libcrypto
-SOURCE[../../libcrypto]=http_lib.c
-
-IF[{- !$disabled{http} -}]
-  SOURCE[../../libcrypto]=http_client.c http_err.c
-ENDIF
+SOURCE[../../libcrypto]=http_client.c http_err.c http_lib.c

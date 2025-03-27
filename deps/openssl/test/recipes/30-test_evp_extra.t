@@ -10,23 +10,13 @@
 use strict;
 use warnings;
 
-use OpenSSL::Test qw/:DEFAULT bldtop_dir srctop_file/;
-use OpenSSL::Test::Utils;
+use OpenSSL::Test qw/:DEFAULT bldtop_dir/;
 
 setup("test_evp_extra");
 
-my $no_conf_autoload = disabled('autoload-config');
-
-plan tests => $no_conf_autoload ? 3 : 4;
+plan tests => 3;
 
 ok(run(test(["evp_extra_test"])), "running evp_extra_test");
-
-unless ($no_conf_autoload) {
-    local $ENV{OPENSSL_CONF} = srctop_file("test","default-for-evptest.cnf");
-    ok(run(test(["evp_extra_test", "-config", srctop_file("test","default-for-evptest.cnf")])),
-       "running evp_extra_test to test evp properties set in config");
-    delete local $ENV{OPENSSL_CONF};
-}
 
 # Run tests with a non-default library context
 ok(run(test(["evp_extra_test", "-context"])), "running evp_extra_test with a non-default library context");

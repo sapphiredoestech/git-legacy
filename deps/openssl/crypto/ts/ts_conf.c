@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2025 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2006-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -50,11 +50,7 @@ X509 *TS_CONF_load_cert(const char *file)
     BIO *cert = NULL;
     X509 *x = NULL;
 
-#if defined(OPENSSL_SYS_WINDOWS)
-    if ((cert = BIO_new_file(file, "rb")) == NULL)
-#else
     if ((cert = BIO_new_file(file, "r")) == NULL)
-#endif
         goto end;
     x = PEM_read_bio_X509_AUX(cert, NULL, NULL, NULL);
  end:
@@ -71,11 +67,7 @@ STACK_OF(X509) *TS_CONF_load_certs(const char *file)
     STACK_OF(X509_INFO) *allcerts = NULL;
     int i;
 
-#if defined(OPENSSL_SYS_WINDOWS)
-    if ((certs = BIO_new_file(file, "rb")) == NULL)
-#else
     if ((certs = BIO_new_file(file, "r")) == NULL)
-#endif
         goto end;
     if ((othercerts = sk_X509_new_null()) == NULL)
         goto end;
@@ -86,7 +78,7 @@ STACK_OF(X509) *TS_CONF_load_certs(const char *file)
 
         if (xi->x509 != NULL) {
             if (!X509_add_cert(othercerts, xi->x509, X509_ADD_FLAG_DEFAULT)) {
-                OSSL_STACK_OF_X509_free(othercerts);
+                sk_X509_pop_free(othercerts, X509_free);
                 othercerts = NULL;
                 goto end;
             }
@@ -106,11 +98,7 @@ EVP_PKEY *TS_CONF_load_key(const char *file, const char *pass)
     BIO *key = NULL;
     EVP_PKEY *pkey = NULL;
 
-#if defined(OPENSSL_SYS_WINDOWS)
-    if ((key = BIO_new_file(file, "rb")) == NULL)
-#else
     if ((key = BIO_new_file(file, "r")) == NULL)
-#endif
         goto end;
     pkey = PEM_read_bio_PrivateKey(key, NULL, NULL, (char *)pass);
  end:
@@ -245,7 +233,7 @@ int TS_CONF_set_certs(CONF *conf, const char *section, const char *certs,
  end:
     ret = 1;
  err:
-    OSSL_STACK_OF_X509_free(certs_obj);
+    sk_X509_pop_free(certs_obj, X509_free);
     return ret;
 }
 
@@ -493,7 +481,7 @@ int TS_CONF_set_ess_cert_id_digest(CONF *conf, const char *section,
     const char *md = NCONF_get_string(conf, section, ENV_ESS_CERT_ID_ALG);
 
     if (md == NULL)
-        md = "sha256";
+        md = "sha1";
 
     cert_md = EVP_get_digestbyname(md);
     if (cert_md == NULL) {

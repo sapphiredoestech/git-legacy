@@ -1,5 +1,5 @@
 # -*- mode: perl; -*-
-# Copyright 2016-2025 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2016-2020 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -14,7 +14,6 @@ use warnings;
 
 package ssltests;
 
-our $fips_3_4;
 
 our @tests = (
     # Default fragment size is 512.
@@ -102,91 +101,6 @@ our @tests = (
             MaxFragmentSize => 5 * 1024 - 5,
         }
     },
-    ############################################
-    # Default (Max) Fragment Size is 512.
-    # Default Application data size is 256.
-    {
-        name => "Maximum Fragment Len extension set to 1024 w. FragmentSize disabled",
-        server => { },
-        client => {
-            extra => {
-                MaxFragmentLenExt => 1024,
-            },
-        },
-        test => {
-            ApplicationData => 3072,
-            MaxFragmentSize => 16384,
-        }
-    },
-    {
-        name => "Maximum Fragment Len extension equal FragmentSize to 2048",
-        server => { },
-        client => {
-            extra => {
-                MaxFragmentLenExt => 2048,
-            },
-        },
-        test => {
-            ApplicationData => 3072,
-            MaxFragmentSize => 2048,
-        }
-    },
-    {
-        name => "Maximum Fragment Len extension 512 lower than FragmentSize 1024",
-        server => { },
-        client => {
-            extra => {
-                MaxFragmentLenExt => 512,
-            },
-        },
-        test => {
-            ApplicationData => 3072,
-            MaxFragmentSize => 1024,
-        }
-    },
-    {
-        name => "Maximum Fragment Len extension 1024 lower than FragmentSize 1024",
-        server => { },
-        client => {
-            extra => {
-                MaxFragmentLenExt => 2048,
-            },
-        },
-        test => {
-            ApplicationData => 3072,
-            MaxFragmentSize => 1024,
-        }
-    },
-    {
-        name => "Maximum Fragment Len extension 4096 greater than FragmentSize 2048",
-        server => { },
-        client => {
-            extra => {
-                MaxFragmentLenExt => 4096,
-            },
-        },
-        test => {
-            ApplicationData => 8196,
-            MaxFragmentSize => 2048,
-        }
-    },
-    {
-        name => "Maximum Fragment Len extension 2048 greater than FragmentSize 1024",
-        server => { },
-        client => {
-            extra => {
-                MaxFragmentLenExt => 2048,
-            },
-        },
-        test => {
-            ApplicationData => 3072,
-            MaxFragmentSize => 1024,
-        }
-    },
-);
-
-# Tests using RSA key exchange
-my @tests_rsa = (
     # When the buffer / fragment size ratio is sufficiently large,
     # multi-buffer code kicks in on some platforms for AES-SHA.  The
     # exact minimum ratio depends on the platform, and is usually
@@ -269,8 +183,86 @@ my @tests_rsa = (
             ApplicationData => 4 * 1024,
             MaxFragmentSize => 4 * 1024,
         }
-    }
+    },
+    ############################################
+    # Default (Max) Fragment Size is 512.
+    # Default Application data size is 256.
+    {
+        name => "Maximum Fragment Len extension set to 1024 w. FragmentSize disabled",
+        server => { },
+        client => {
+            extra => {
+                MaxFragmentLenExt => 1024,
+            },
+        },
+        test => {
+            ApplicationData => 3072,
+            MaxFragmentSize => 16384,
+        }
+    },
+    {
+        name => "Maximum Fragment Len extension equal FragmentSize to 2048",
+        server => { },
+        client => {
+            extra => {
+                MaxFragmentLenExt => 2048,
+            },
+        },
+        test => {
+            ApplicationData => 3072,
+            MaxFragmentSize => 2048,
+        }
+    },
+    {
+        name => "Maximum Fragment Len extension 512 lower than FragmentSize 1024",
+        server => { },
+        client => {
+            extra => {
+                MaxFragmentLenExt => 512,
+            },
+        },
+        test => {
+            ApplicationData => 3072,
+            MaxFragmentSize => 1024,
+        }
+    },
+    {
+        name => "Maximum Fragment Len extension 1024 lower than FragmentSize 1024",
+        server => { },
+        client => {
+            extra => {
+                MaxFragmentLenExt => 2048,
+            },
+        },
+        test => {
+            ApplicationData => 3072,
+            MaxFragmentSize => 1024,
+        }
+    },
+    {
+        name => "Maximum Fragment Len extension 4096 greater than FragmentSize 2048",
+        server => { },
+        client => {
+            extra => {
+                MaxFragmentLenExt => 4096,
+            },
+        },
+        test => {
+            ApplicationData => 8196,
+            MaxFragmentSize => 2048,
+        }
+    },
+    {
+        name => "Maximum Fragment Len extension 2048 greater than FragmentSize 1024",
+        server => { },
+        client => {
+            extra => {
+                MaxFragmentLenExt => 2048,
+            },
+        },
+        test => {
+            ApplicationData => 3072,
+            MaxFragmentSize => 1024,
+        }
+    },
 );
-
-push @tests, @tests_rsa
-    unless $fips_3_4;

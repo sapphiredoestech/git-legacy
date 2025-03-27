@@ -10,21 +10,7 @@ package ssltests;
 use OpenSSL::Test::Utils;
 
 our $fips_mode;
-our $fips_3_4;
-our $fips_3_5;
 our $no_deflt_libctx;
-
-srand(20);
-sub randcase {
-    my ($names) = @_;
-    my @ret;
-    foreach my $name (split(/:/, $names)) {
-        my ($alg, $rest) = split(/(?=[+])/, $name, 2);
-        $alg =~ s{([a-zA-Z])}{chr(ord($1)^(int(rand(2.0)) * 32))}eg;
-        push @ret, $alg . ($rest // "");
-    }
-    return join(":", @ret);
-}
 
 my $server = {
     "ECDSA.Certificate" => test_pem("server-ecdsa-cert.pem"),
@@ -154,7 +140,7 @@ our @tests = (
         client => {
             "CipherString" => "aECDSA",
             "MaxProtocol" => "TLSv1.2",
-            "SignatureAlgorithms" => randcase("ECDSA+SHA256:ed25519"),
+            "SignatureAlgorithms" => "ECDSA+SHA256:ed25519",
         },
         test   => {
             "ExpectedServerCertType" => "P-256",
@@ -180,7 +166,7 @@ our @tests = (
         name => "ECDSA Signature Algorithm Selection",
         server => $server,
         client => {
-            "SignatureAlgorithms" => randcase("ECDSA+SHA256"),
+            "SignatureAlgorithms" => "ECDSA+SHA256",
         },
         test   => {
             "ExpectedServerCertType" => "P-256",
@@ -193,7 +179,7 @@ our @tests = (
         name => "ECDSA Signature Algorithm Selection SHA384",
         server => $server,
         client => {
-            "SignatureAlgorithms" => randcase("ECDSA+SHA384"),
+            "SignatureAlgorithms" => "ECDSA+SHA384",
         },
         test   => {
             "ExpectedServerCertType" => "P-256",
@@ -210,7 +196,7 @@ our @tests = (
             "MaxProtocol" => "TLSv1.2"
         },
         client => {
-            "SignatureAlgorithms" => randcase("ECDSA+SHA256"),
+            "SignatureAlgorithms" => "ECDSA+SHA256",
         },
         test   => {
             "ExpectedServerCertType" => "P-256",
@@ -225,7 +211,7 @@ our @tests = (
              "MaxProtocol" => "TLSv1.2"
         },
         client => {
-            "SignatureAlgorithms" => randcase("ECDSA+SHA256"),
+            "SignatureAlgorithms" => "ECDSA+SHA256",
         },
         test   => {
             "ExpectedResult" => "ServerFail"
@@ -235,7 +221,7 @@ our @tests = (
         name => "RSA Signature Algorithm Selection",
         server => $server,
         client => {
-            "SignatureAlgorithms" => randcase("RSA+SHA256"),
+            "SignatureAlgorithms" => "RSA+SHA256",
         },
         test   => {
             "ExpectedServerCertType" => "RSA",
@@ -248,7 +234,7 @@ our @tests = (
         name => "RSA-PSS Signature Algorithm Selection",
         server => $server,
         client => {
-            "SignatureAlgorithms" => randcase("RSA-PSS+SHA256"),
+            "SignatureAlgorithms" => "RSA-PSS+SHA256",
         },
         test   => {
             "ExpectedServerCertType" => "RSA",
@@ -266,7 +252,7 @@ our @tests = (
         },
         test   => {
             "ExpectedServerCertType" =>, "RSA",
-            "ExpectedResult" => $fips_3_4 ? "ClientFail" : "Success"
+            "ExpectedResult" => "Success"
         },
     },
     {
@@ -279,7 +265,7 @@ our @tests = (
         },
         client => {
             "VerifyCAFile" => test_pem("p384-root.pem"),
-            "SignatureAlgorithms" => randcase("ECDSA+SHA384:ECDSA+SHA256")
+            "SignatureAlgorithms" => "ECDSA+SHA384:ECDSA+SHA256"
         },
         test   => {
             "ExpectedServerCertType" => "P-256",
@@ -298,7 +284,7 @@ our @tests = (
         },
         client => {
             "VerifyCAFile" => test_pem("p384-root.pem"),
-            "SignatureAlgorithms" => randcase("ECDSA+SHA256:ECDSA+SHA384")
+            "SignatureAlgorithms" => "ECDSA+SHA256:ECDSA+SHA384"
         },
         test   => {
             "ExpectedServerCertType" => "P-384",
@@ -313,7 +299,7 @@ our @tests = (
         client => {
             "CipherString" => "aECDSA",
             "MaxProtocol" => "TLSv1.2",
-            "SignatureAlgorithms" => randcase("ed25519:ECDSA+SHA256"),
+            "SignatureAlgorithms" => "ed25519:ECDSA+SHA256",
             "RequestCAFile" => test_pem("root-cert.pem"),
         },
         test   => {
@@ -330,7 +316,7 @@ our @tests = (
         client => {
             "CipherString" => "aECDSA",
             "MaxProtocol" => "TLSv1.2",
-            "SignatureAlgorithms" => randcase("ed448:ECDSA+SHA256"),
+            "SignatureAlgorithms" => "ed448:ECDSA+SHA256",
             "RequestCAFile" => test_pem("root-ed448-cert.pem"),
             "VerifyCAFile" => test_pem("root-ed448-cert.pem"),
         },
@@ -339,6 +325,41 @@ our @tests = (
             "ExpectedServerSignType" =>, "Ed448",
             # Note: certificate_authorities not sent for TLS < 1.3
             "ExpectedServerCANames" =>, "empty",
+            "ExpectedResult" => "Success"
+        },
+    },
+    {
+        name => "Ed25519 CipherString and Curves Selection",
+        server => $server,
+        client => {
+            "CipherString" => "aECDSA",
+            "MaxProtocol" => "TLSv1.2",
+            "SignatureAlgorithms" => "ECDSA+SHA256:ed25519",
+            # Excluding P-256 from the supported curves list means server
+            # certificate should be Ed25519 and not P-256
+            "Curves" => "X25519"
+        },
+        test   => {
+            "ExpectedServerCertType" =>, "Ed25519",
+            "ExpectedServerSignType" =>, "Ed25519",
+            "ExpectedResult" => "Success"
+        },
+    },
+    {
+        name => "Ed448 CipherString and Curves Selection",
+        server => $server,
+        client => {
+            "CipherString" => "aECDSA",
+            "MaxProtocol" => "TLSv1.2",
+            "SignatureAlgorithms" => "ECDSA+SHA256:ed448",
+            "VerifyCAFile" => test_pem("root-ed448-cert.pem"),
+            # Excluding P-256 from the supported curves list means server
+            # certificate should be Ed25519 and not P-256
+            "Curves" => "X448"
+        },
+        test   => {
+            "ExpectedServerCertType" =>, "Ed448",
+            "ExpectedServerSignType" =>, "Ed448",
             "ExpectedResult" => "Success"
         },
     },
@@ -395,7 +416,7 @@ my @tests_non_fips = (
         },
         client => {
             "CipherString" => "DEFAULT:\@SECLEVEL=0",
-            "SignatureAlgorithms" => randcase("ECDSA+SHA1"),
+            "SignatureAlgorithms" => "ECDSA+SHA1",
         },
         test   => {
             "ExpectedServerCertType" => "P-256",
@@ -425,41 +446,6 @@ my @tests_non_fips = (
             "ExpectedResult" => "Success"
         },
     },
-    {
-        name => "Ed25519 CipherString and Curves Selection",
-        server => $server,
-        client => {
-            "CipherString" => "aECDSA",
-            "MaxProtocol" => "TLSv1.2",
-            "SignatureAlgorithms" => randcase("ECDSA+SHA256:ed25519"),
-            # Excluding P-256 from the supported curves list means server
-            # certificate should be Ed25519 and not P-256
-            "Curves" => "X25519"
-        },
-        test   => {
-            "ExpectedServerCertType" =>, "Ed25519",
-            "ExpectedServerSignType" =>, "Ed25519",
-            "ExpectedResult" => "Success"
-        },
-    },
-    {
-        name => "Ed448 CipherString and Curves Selection",
-        server => $server,
-        client => {
-            "CipherString" => "aECDSA",
-            "MaxProtocol" => "TLSv1.2",
-            "SignatureAlgorithms" => randcase("ECDSA+SHA256:ed448"),
-            "VerifyCAFile" => test_pem("root-ed448-cert.pem"),
-            # Excluding P-256 from the supported curves list means server
-            # certificate should be Ed25519 and not P-256
-            "Curves" => "X448"
-        },
-        test   => {
-            "ExpectedServerCertType" =>, "Ed448",
-            "ExpectedServerSignType" =>, "Ed448",
-            "ExpectedResult" => "Success"
-        },
-    },
 );
 
 my @tests_pss = (
@@ -480,7 +466,7 @@ my @tests_pss = (
         name => "RSA-PSS Certificate Legacy Signature Algorithm Selection",
         server => $server_pss,
         client => {
-            "SignatureAlgorithms" => randcase("RSA-PSS+SHA256"),
+            "SignatureAlgorithms" => "RSA-PSS+SHA256",
         },
         test   => {
             "ExpectedServerCertType" => "RSA",
@@ -493,7 +479,7 @@ my @tests_pss = (
         name => "RSA-PSS Certificate Unified Signature Algorithm Selection",
         server => $server_pss,
         client => {
-            "SignatureAlgorithms" => randcase("rsa_pss_pss_sha256"),
+            "SignatureAlgorithms" => "rsa_pss_pss_sha256",
         },
         test   => {
             "ExpectedServerCertType" => "RSA-PSS",
@@ -517,7 +503,7 @@ my @tests_pss = (
         name => "Only RSA-PSS Certificate Valid Signature Algorithms",
         server => $server_pss_only,
         client => {
-            "SignatureAlgorithms" => randcase("rsa_pss_pss_sha512"),
+            "SignatureAlgorithms" => "rsa_pss_pss_sha512",
         },
         test   => {
             "ExpectedServerCertType" => "RSA-PSS",
@@ -530,7 +516,7 @@ my @tests_pss = (
         name => "RSA-PSS Certificate, no PSS signature algorithms",
         server => $server_pss_only,
         client => {
-            "SignatureAlgorithms" => randcase("RSA+SHA256"),
+            "SignatureAlgorithms" => "RSA+SHA256",
         },
         test   => {
             "ExpectedResult" => "ServerFail"
@@ -551,7 +537,7 @@ my @tests_pss = (
         name => "RSA-PSS Restricted Certificate Valid Signature Algorithms",
         server => $server_pss_restrict_only,
         client => {
-            "SignatureAlgorithms" => randcase("rsa_pss_pss_sha256:rsa_pss_pss_sha512"),
+            "SignatureAlgorithms" => "rsa_pss_pss_sha256:rsa_pss_pss_sha512",
         },
         test   => {
             "ExpectedServerCertType" => "RSA-PSS",
@@ -564,7 +550,7 @@ my @tests_pss = (
         name => "RSA-PSS Restricted Cert client prefers invalid Signature Algorithm",
         server => $server_pss_restrict_only,
         client => {
-            "SignatureAlgorithms" => randcase("rsa_pss_pss_sha512:rsa_pss_pss_sha256"),
+            "SignatureAlgorithms" => "rsa_pss_pss_sha512:rsa_pss_pss_sha256",
         },
         test   => {
             "ExpectedServerCertType" => "RSA-PSS",
@@ -577,7 +563,7 @@ my @tests_pss = (
         name => "RSA-PSS Restricted Certificate Invalid Signature Algorithms",
         server => $server_pss_restrict_only,
         client => {
-            "SignatureAlgorithms" => randcase("rsa_pss_pss_sha512"),
+            "SignatureAlgorithms" => "rsa_pss_pss_sha512",
         },
         test   => {
             "ExpectedResult" => "ServerFail"
@@ -599,14 +585,9 @@ my @tests_pss = (
 my @tests_tls_1_1 = (
     {
         name => "Only RSA-PSS Certificate, TLS v1.1",
-        server => {
-            "CipherString" => "DEFAULT:\@SECLEVEL=0",
-            "Certificate" => test_pem("server-pss-cert.pem"),
-            "PrivateKey" => test_pem("server-pss-key.pem"),
-        },
+        server => $server_pss_only,
         client => {
             "MaxProtocol" => "TLSv1.1",
-            "CipherString" => "DEFAULT:\@SECLEVEL=0",
         },
         test   => {
             "ExpectedResult" => "ServerFail"
@@ -654,7 +635,7 @@ my @tests_tls_1_3 = (
         name => "TLS 1.3 ECDSA Signature Algorithm Selection",
         server => $server_tls_1_3,
         client => {
-            "SignatureAlgorithms" => randcase("ECDSA+SHA256"),
+            "SignatureAlgorithms" => "ECDSA+SHA256",
         },
         test   => {
             "ExpectedServerCertType" => "P-256",
@@ -673,7 +654,7 @@ my @tests_tls_1_3 = (
             "MaxProtocol" => "TLSv1.3"
         },
         client => {
-            "SignatureAlgorithms" => randcase("ECDSA+SHA256"),
+            "SignatureAlgorithms" => "ECDSA+SHA256",
         },
         test   => {
             "ExpectedServerCertType" => "P-256",
@@ -698,7 +679,7 @@ my @tests_tls_1_3 = (
         },
         client => {
             "CipherString" => "DEFAULT:\@SECLEVEL=0",
-            "SignatureAlgorithms" => randcase("ECDSA+SHA1"),
+            "SignatureAlgorithms" => "ECDSA+SHA1",
         },
         test   => {
             "ExpectedResult" => "ServerFail"
@@ -708,7 +689,7 @@ my @tests_tls_1_3 = (
         name => "TLS 1.3 ECDSA Signature Algorithm Selection with PSS",
         server => $server_tls_1_3,
         client => {
-            "SignatureAlgorithms" => randcase("ECDSA+SHA256:RSA-PSS+SHA256"),
+            "SignatureAlgorithms" => "ECDSA+SHA256:RSA-PSS+SHA256",
             "RequestCAFile" => test_pem("root-cert.pem"),
         },
         test   => {
@@ -723,7 +704,7 @@ my @tests_tls_1_3 = (
         name => "TLS 1.3 RSA Signature Algorithm Selection SHA384 with PSS",
         server => $server_tls_1_3,
         client => {
-            "SignatureAlgorithms" => randcase("ECDSA+SHA384:RSA-PSS+SHA384"),
+            "SignatureAlgorithms" => "ECDSA+SHA384:RSA-PSS+SHA384",
         },
         test   => {
             "ExpectedServerCertType" => "RSA",
@@ -739,7 +720,7 @@ my @tests_tls_1_3 = (
             "MaxProtocol" => "TLSv1.3"
         },
         client => {
-            "SignatureAlgorithms" => randcase("ECDSA+SHA256"),
+            "SignatureAlgorithms" => "ECDSA+SHA256",
         },
         test   => {
             "ExpectedResult" => "ServerFail"
@@ -749,7 +730,7 @@ my @tests_tls_1_3 = (
         name => "TLS 1.3 RSA Signature Algorithm Selection, no PSS",
         server => $server_tls_1_3,
         client => {
-            "SignatureAlgorithms" => randcase("RSA+SHA256"),
+            "SignatureAlgorithms" => "RSA+SHA256",
         },
         test   => {
             "ExpectedResult" => "ServerFail"
@@ -759,7 +740,7 @@ my @tests_tls_1_3 = (
         name => "TLS 1.3 RSA-PSS Signature Algorithm Selection",
         server => $server_tls_1_3,
         client => {
-            "SignatureAlgorithms" => randcase("RSA-PSS+SHA256"),
+            "SignatureAlgorithms" => "RSA-PSS+SHA256",
         },
         test   => {
             "ExpectedServerCertType" => "RSA",
@@ -771,7 +752,7 @@ my @tests_tls_1_3 = (
     {
         name => "TLS 1.3 RSA Client Auth Signature Algorithm Selection",
         server => {
-            "ClientSignatureAlgorithms" => randcase("PSS+SHA256"),
+            "ClientSignatureAlgorithms" => "PSS+SHA256",
             "VerifyCAFile" => test_pem("root-cert.pem"),
             "VerifyMode" => "Require"
         },
@@ -787,7 +768,7 @@ my @tests_tls_1_3 = (
     {
         name => "TLS 1.3 RSA Client Auth Signature Algorithm Selection non-empty CA Names",
         server => {
-            "ClientSignatureAlgorithms" => randcase("PSS+SHA256"),
+            "ClientSignatureAlgorithms" => "PSS+SHA256",
             "VerifyCAFile" => test_pem("root-cert.pem"),
             "RequestCAFile" => test_pem("root-cert.pem"),
             "VerifyMode" => "Require"
@@ -804,7 +785,7 @@ my @tests_tls_1_3 = (
     {
         name => "TLS 1.3 ECDSA Client Auth Signature Algorithm Selection",
         server => {
-            "ClientSignatureAlgorithms" => randcase("ECDSA+SHA256"),
+            "ClientSignatureAlgorithms" => "ECDSA+SHA256",
             "VerifyCAFile" => test_pem("root-cert.pem"),
             "VerifyMode" => "Require"
         },
@@ -823,7 +804,7 @@ my @tests_tls_1_3_non_fips = (
         name => "TLS 1.3 Ed25519 Signature Algorithm Selection",
         server => $server_tls_1_3,
         client => {
-            "SignatureAlgorithms" => randcase("ed25519"),
+            "SignatureAlgorithms" => "ed25519",
         },
         test   => {
             "ExpectedServerCertType" => "Ed25519",
@@ -835,7 +816,7 @@ my @tests_tls_1_3_non_fips = (
         name => "TLS 1.3 Ed448 Signature Algorithm Selection",
         server => $server_tls_1_3,
         client => {
-            "SignatureAlgorithms" => randcase("ed448"),
+            "SignatureAlgorithms" => "ed448",
             "VerifyCAFile" => test_pem("root-ed448-cert.pem"),
         },
         test   => {
@@ -848,7 +829,7 @@ my @tests_tls_1_3_non_fips = (
         name => "TLS 1.3 Ed25519 CipherString and Groups Selection",
         server => $server_tls_1_3,
         client => {
-            "SignatureAlgorithms" => randcase("ECDSA+SHA256:ed25519"),
+            "SignatureAlgorithms" => "ECDSA+SHA256:ed25519",
             # Excluding P-256 from the supported groups list should
             # mean server still uses a P-256 certificate because supported
             # groups is not used in signature selection for TLS 1.3
@@ -864,7 +845,7 @@ my @tests_tls_1_3_non_fips = (
         name => "TLS 1.3 Ed448 CipherString and Groups Selection",
         server => $server_tls_1_3,
         client => {
-            "SignatureAlgorithms" => randcase("ECDSA+SHA256:ed448"),
+            "SignatureAlgorithms" => "ECDSA+SHA256:ed448",
             # Excluding P-256 from the supported groups list should
             # mean server still uses a P-256 certificate because supported
             # groups is not used in signature selection for TLS 1.3
@@ -943,7 +924,7 @@ my @tests_tls_1_3_non_fips = (
             "MaxProtocol" => "TLSv1.3"
         },
         test   => {
-            "ExpectedResult" => "Success"
+            "ExpectedResult" => "ServerFail"
         },
     },
 );
@@ -963,7 +944,7 @@ my @tests_dsa_tls_1_2 = (
             "CipherString" => "ALL",
         },
         client => {
-            "SignatureAlgorithms" => randcase("DSA+SHA256:DSA+SHA1"),
+            "SignatureAlgorithms" => "DSA+SHA256:DSA+SHA1",
             "CipherString" => "ALL",
         },
         test   => {
@@ -976,7 +957,7 @@ my @tests_dsa_tls_1_3 = (
     {
         name => "TLS 1.3 Client Auth No TLS 1.3 Signature Algorithms",
         server => {
-            "ClientSignatureAlgorithms" => randcase("ECDSA+SHA1:DSA+SHA256:RSA+SHA256"),
+            "ClientSignatureAlgorithms" => "ECDSA+SHA1:DSA+SHA256:RSA+SHA256",
             "VerifyCAFile" => test_pem("root-cert.pem"),
             "VerifyMode" => "Request"
         },
@@ -995,7 +976,7 @@ my @tests_dsa_tls_1_3 = (
             "CipherString" => "ALL",
         },
         client => {
-            "SignatureAlgorithms" => randcase("DSA+SHA1:DSA+SHA256:ECDSA+SHA256"),
+            "SignatureAlgorithms" => "DSA+SHA1:DSA+SHA256:ECDSA+SHA256",
             "CipherString" => "ALL",
         },
         test   => {
@@ -1005,33 +986,6 @@ my @tests_dsa_tls_1_3 = (
 );
 
 if (!disabled("dsa")) {
-    push @tests, @tests_dsa_tls_1_2 unless disabled("dh") || $fips_3_4;
+    push @tests, @tests_dsa_tls_1_2 unless disabled("dh");
     push @tests, @tests_dsa_tls_1_3 unless disabled("tls1_3");
-}
-
-my @tests_mldsa_tls_1_3 = (
-    {
-        name => "TLS 1.3 ML-DSA Certificate Test",
-        server => {
-            "Certificate" => test_pem("server-ml-dsa-44-cert.pem"),
-            "PrivateKey" => test_pem("server-ml-dsa-44-key.pem"),
-            "MinProtocol" => "TLSv1.3",
-            "MaxProtocol" => "TLSv1.3",
-            "SignatureAlgorithms" => randcase("mldsa44"),
-        },
-        client => {
-            "MinProtocol" => "TLSv1.3",
-            "MaxProtocol" => "TLSv1.3",
-            "SignatureAlgorithms" => randcase("mldsa44"),
-            "VerifyCAFile" => test_pem("root-ml-dsa-44-cert.pem"),
-            "VerifyMode" => "Peer",
-        },
-        test   => {
-            "ExpectedResult" => "Success"
-        },
-    },
-);
-
-if (!disabled("ml-dsa") && (!$fips_mode || $fips_3_5)) {
-    push @tests, @tests_mldsa_tls_1_3 unless disabled("tls1_3");
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -19,9 +19,6 @@
 typedef enum OPTION_choice {
     OPT_COMMON,
     OPT_B, OPT_D, OPT_E, OPT_M, OPT_F, OPT_O, OPT_P, OPT_V, OPT_A, OPT_R, OPT_C
-#if defined(_WIN32)
-    ,OPT_W
-#endif
 } OPTION_CHOICE;
 
 const OPTIONS version_options[] = {
@@ -40,9 +37,6 @@ const OPTIONS version_options[] = {
     {"r", OPT_R, '-', "Show random seeding options"},
     {"v", OPT_V, '-', "Show library version"},
     {"c", OPT_C, '-', "Show CPU settings info"},
-#if defined(_WIN32)
-    {"w", OPT_W, '-', "Show Windows install context"},
-#endif
     {NULL}
 };
 
@@ -51,9 +45,6 @@ int version_main(int argc, char **argv)
     int ret = 1, dirty = 0, seed = 0;
     int cflags = 0, version = 0, date = 0, options = 0, platform = 0, dir = 0;
     int engdir = 0, moddir = 0, cpuinfo = 0;
-#if defined(_WIN32)
-    int windows = 0;
-#endif
     char *prog;
     OPTION_CHOICE o;
 
@@ -99,11 +90,6 @@ opthelp:
         case OPT_C:
             dirty = cpuinfo = 1;
             break;
-#if defined(_WIN32)
-        case OPT_W:
-            dirty = windows = 1;
-            break;
-#endif
         case OPT_A:
             seed = options = cflags = version = date = platform
                 = dir = engdir = moddir = cpuinfo
@@ -113,7 +99,8 @@ opthelp:
     }
 
     /* No extra arguments. */
-    if (!opt_check_rest_arg(NULL))
+    argc = opt_num_rest();
+    if (argc != 0)
         goto opthelp;
 
     if (!dirty)
@@ -145,10 +132,6 @@ opthelp:
     }
     if (cpuinfo)
         printf("%s\n", OpenSSL_version(OPENSSL_CPU_INFO));
-#if defined(_WIN32)
-    if (windows)
-        printf("%s\n", OpenSSL_version(OPENSSL_WINCTX));
-#endif
     ret = 0;
  end:
     return ret;
