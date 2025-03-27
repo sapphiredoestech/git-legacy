@@ -14,6 +14,7 @@ details. */
 #include "memory_layout.h"
 
 static const wincaps wincap_7 = {
+  def_guard_pages:2,
   {
     has_new_pebteb_region:false,
     has_unprivileged_createsymlink:false,
@@ -36,6 +37,7 @@ static const wincaps wincap_7 = {
 };
 
 static const wincaps wincap_8 = {
+  def_guard_pages:3,
   {
     has_new_pebteb_region:false,
     has_unprivileged_createsymlink:false,
@@ -58,6 +60,7 @@ static const wincaps wincap_8 = {
 };
 
 static const wincaps wincap_8_1 = {
+  def_guard_pages:3,
   {
     has_new_pebteb_region:false,
     has_unprivileged_createsymlink:false,
@@ -80,6 +83,7 @@ static const wincaps wincap_8_1 = {
 };
 
 static const wincaps  wincap_10_1507 = {
+  def_guard_pages:3,
   {
     has_new_pebteb_region:false,
     has_unprivileged_createsymlink:false,
@@ -102,6 +106,7 @@ static const wincaps  wincap_10_1507 = {
 };
 
 static const wincaps  wincap_10_1607 = {
+  def_guard_pages:3,
   {
     has_new_pebteb_region:false,
     has_unprivileged_createsymlink:false,
@@ -124,6 +129,7 @@ static const wincaps  wincap_10_1607 = {
 };
 
 static const wincaps wincap_10_1703 = {
+  def_guard_pages:3,
   {
     has_new_pebteb_region:true,
     has_unprivileged_createsymlink:true,
@@ -146,6 +152,7 @@ static const wincaps wincap_10_1703 = {
 };
 
 static const wincaps wincap_10_1709 = {
+  def_guard_pages:3,
   {
     has_new_pebteb_region:true,
     has_unprivileged_createsymlink:true,
@@ -168,6 +175,7 @@ static const wincaps wincap_10_1709 = {
 };
 
 static const wincaps wincap_10_1803 = {
+  def_guard_pages:3,
   {
     has_new_pebteb_region:true,
     has_unprivileged_createsymlink:true,
@@ -190,6 +198,7 @@ static const wincaps wincap_10_1803 = {
 };
 
 static const wincaps wincap_10_1809 = {
+  def_guard_pages:3,
   {
     has_new_pebteb_region:true,
     has_unprivileged_createsymlink:true,
@@ -212,6 +221,7 @@ static const wincaps wincap_10_1809 = {
 };
 
 static const wincaps wincap_10_1903 = {
+  def_guard_pages:3,
   {
     has_new_pebteb_region:true,
     has_unprivileged_createsymlink:true,
@@ -234,6 +244,7 @@ static const wincaps wincap_10_1903 = {
 };
 
 static const wincaps wincap_10_2004 = {
+  def_guard_pages:3,
   {
     has_new_pebteb_region:true,
     has_unprivileged_createsymlink:true,
@@ -256,6 +267,7 @@ static const wincaps wincap_10_2004 = {
 };
 
 static const wincaps wincap_11 = {
+  def_guard_pages:3,
   {
     has_new_pebteb_region:true,
     has_unprivileged_createsymlink:true,
