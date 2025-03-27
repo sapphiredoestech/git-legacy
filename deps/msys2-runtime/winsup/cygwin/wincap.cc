@@ -15,6 +15,7 @@ details. */
 
 static const wincaps wincap_7 = {
   def_guard_pages:2,
+  mmap_storage_high:__MMAP_STORAGE_HIGH_LEGACY,
   {
     has_new_pebteb_region:false,
     has_unprivileged_createsymlink:false,
@@ -37,6 +38,7 @@ static const wincaps wincap_7 = {
 };
 
 static const wincaps wincap_8 = {
+  mmap_storage_high:__MMAP_STORAGE_HIGH_LEGACY,
   def_guard_pages:3,
   {
     has_new_pebteb_region:false,
@@ -60,6 +62,7 @@ static const wincaps wincap_8 = {
 };
 
 static const wincaps wincap_8_1 = {
+  mmap_storage_high:__MMAP_STORAGE_HIGH,
   def_guard_pages:3,
   {
     has_new_pebteb_region:false,
@@ -83,6 +86,7 @@ static const wincaps wincap_8_1 = {
 };
 
 static const wincaps  wincap_10_1507 = {
+  mmap_storage_high:__MMAP_STORAGE_HIGH,
   def_guard_pages:3,
   {
     has_new_pebteb_region:false,
@@ -106,6 +110,7 @@ static const wincaps  wincap_10_1507 = {
 };
 
 static const wincaps  wincap_10_1607 = {
+  mmap_storage_high:__MMAP_STORAGE_HIGH,
   def_guard_pages:3,
   {
     has_new_pebteb_region:false,
@@ -129,6 +134,7 @@ static const wincaps  wincap_10_1607 = {
 };
 
 static const wincaps wincap_10_1703 = {
+  mmap_storage_high:__MMAP_STORAGE_HIGH,
   def_guard_pages:3,
   {
     has_new_pebteb_region:true,
@@ -152,6 +158,7 @@ static const wincaps wincap_10_1703 = {
 };
 
 static const wincaps wincap_10_1709 = {
+  mmap_storage_high:__MMAP_STORAGE_HIGH,
   def_guard_pages:3,
   {
     has_new_pebteb_region:true,
@@ -175,6 +182,7 @@ static const wincaps wincap_10_1709 = {
 };
 
 static const wincaps wincap_10_1803 = {
+  mmap_storage_high:__MMAP_STORAGE_HIGH,
   def_guard_pages:3,
   {
     has_new_pebteb_region:true,
@@ -198,6 +206,7 @@ static const wincaps wincap_10_1803 = {
 };
 
 static const wincaps wincap_10_1809 = {
+  mmap_storage_high:__MMAP_STORAGE_HIGH,
   def_guard_pages:3,
   {
     has_new_pebteb_region:true,
@@ -221,6 +230,7 @@ static const wincaps wincap_10_1809 = {
 };
 
 static const wincaps wincap_10_1903 = {
+  mmap_storage_high:__MMAP_STORAGE_HIGH,
   def_guard_pages:3,
   {
     has_new_pebteb_region:true,
@@ -244,6 +254,7 @@ static const wincaps wincap_10_1903 = {
 };
 
 static const wincaps wincap_10_2004 = {
+  mmap_storage_high:__MMAP_STORAGE_HIGH,
   def_guard_pages:3,
   {
     has_new_pebteb_region:true,
@@ -267,6 +278,7 @@ static const wincaps wincap_10_2004 = {
 };
 
 static const wincaps wincap_11 = {
+  mmap_storage_high:__MMAP_STORAGE_HIGH,
   def_guard_pages:3,
   {
     has_new_pebteb_region:true,
