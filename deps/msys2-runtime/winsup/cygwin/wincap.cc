@@ -13,6 +13,50 @@ details. */
 #include "ntdll.h"
 #include "memory_layout.h"
 
+static const wincaps wincap_7 = {
+  {
+    has_new_pebteb_region:false,
+    has_unprivileged_createsymlink:false,
+    has_precise_interrupt_time:false,
+    has_posix_unlink_semantics:false,
+    has_posix_unlink_semantics_with_ignore_readonly:false,
+    has_case_sensitive_dirs:false,
+    has_posix_rename_semantics:false,
+    has_con_24bit_colors:false,
+    has_con_broken_csi3j:false,
+    has_con_broken_il_dl:false,
+    has_con_esc_rep:false,
+    has_extended_mem_api:false,
+    has_tcp_fastopen:false,
+    has_linux_tcp_keepalive_sockopts:false,
+    has_tcp_maxrtms:false,
+    has_con_broken_tabs:false,
+    has_user_shstk:false,
+  },
+};
+
+static const wincaps wincap_8 = {
+  {
+    has_new_pebteb_region:false,
+    has_unprivileged_createsymlink:false,
+    has_precise_interrupt_time:false,
+    has_posix_unlink_semantics:false,
+    has_posix_unlink_semantics_with_ignore_readonly:false,
+    has_case_sensitive_dirs:false,
+    has_posix_rename_semantics:false,
+    has_con_24bit_colors:false,
+    has_con_broken_csi3j:false,
+    has_con_broken_il_dl:false,
+    has_con_esc_rep:false,
+    has_extended_mem_api:false,
+    has_tcp_fastopen:false,
+    has_linux_tcp_keepalive_sockopts:false,
+    has_tcp_maxrtms:false,
+    has_con_broken_tabs:false,
+    has_user_shstk:false,
+  },
+};
+
 static const wincaps wincap_8_1 = {
   {
     has_new_pebteb_region:false,
@@ -260,8 +304,19 @@ wincapc::init ()
   switch (version.dwMajorVersion)
     {
       case 6:
-	caps = &wincap_8_1;
-	break;
+	switch (version.dwMinorVersion)
+	  {
+	    case 1:
+	      caps = &wincap_7;
+	      break;
+	    case 2:
+	      caps = &wincap_8;
+	      break;
+	    case 3:
+	    default:
+	      caps = &wincap_8_1;
+	      break;
+	  }
       case 10:
       default:
 	if (likely (version.dwBuildNumber >= 22000))
